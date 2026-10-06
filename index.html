@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1F4A44">
+<meta name="theme-color" content="#0F0E0E">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,181 +11,233 @@
 <title>愛情銀行</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --cover: #1F4A44;       /* 存摺封面的深綠 */
-    --paper: #EEF2EC;       /* 內頁紙色 */
-    --paper-2: #E3EAE1;
-    --ink: #17302C;
-    --rule: #C3D0C6;        /* 存摺的橫線 */
-    --muted: #4C6760;
-    --credit: #1F6B5E;      /* 入帳 */
-    --seal: #B83A2D;        /* 支出、印章 */
-    --serif: "Noto Serif TC", "Songti TC", "PMingLiU", "Noto Serif CJK TC", serif;
+    --bg: #0F0E0E;
+    --panel: #161413;
+    --panel-2: #1D1A19;
+    --line: #2A2523;
+    --rose: #E2B4A0;      /* 玫瑰金:文字與重點 */
+    --copper: #B98672;    /* 玫瑰金:細線與外框 */
+    --text: #F2ECE8;
+    --dim: #CFC6C0;
+    --muted: #8F8580;
+    --serif: "Cormorant Garamond", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
     --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
-    color-scheme: light;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; margin: 0; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    font-family: var(--sans);
-    background: var(--paper);
-    color: var(--ink);
-    min-height: 100vh;
-    min-height: 100dvh;
-    -webkit-tap-highlight-color: transparent;
+    font-family: var(--sans); font-weight: 400; background: var(--bg); color: var(--text);
+    min-height: 100vh; min-height: 100dvh; -webkit-tap-highlight-color: transparent;
   }
   button { font: inherit; color: inherit; cursor: pointer; }
   button:disabled { cursor: default; }
-  :focus-visible { outline: 3px solid var(--seal); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--rose); outline-offset: 2px; }
+  .ic { display: block; flex: none; }
 
-  .screen { max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
-
-  /* ---------- 封面 ---------- */
-  .cover {
-    background: var(--cover);
-    color: var(--paper);
-    padding: calc(env(safe-area-inset-top, 0px) + 20px) 22px 28px;
+  .screen {
+    max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+    background: linear-gradient(180deg, #1B1716 0, var(--bg) 340px) no-repeat;
   }
-  .cover-top { display: flex; justify-content: space-between; align-items: center; }
-  .bank { font-family: var(--serif); font-weight: 700; font-size: 18px; letter-spacing: .12em; }
-  .bank-big { font-family: var(--serif); font-weight: 900; font-size: 36px; letter-spacing: .14em; margin: 28px 0 6px; }
-  .holder { margin-top: 20px; font-size: 15px; opacity: .85; }
-  .bal-label { margin-top: 22px; font-size: 13px; opacity: .8; }
-  .bal { display: flex; align-items: baseline; gap: 8px; }
-  .num { font-family: var(--serif); font-weight: 900; font-size: 54px; line-height: 1.15; font-variant-numeric: tabular-nums; }
-  .unit { font-size: 16px; opacity: .85; }
-  .lock-btn {
-    min-height: 44px; padding: 0 4px; background: none; border: 0;
-    color: var(--paper); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; opacity: .9;
+  .page { flex: 1; padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ---------- 上方列與問候 ---------- */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center; min-height: 44px;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 20px 6px;
+  }
+  .top-title { font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: .06em; color: var(--rose); }
+  .top-actions { display: flex; gap: 10px; margin-left: auto; }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, .02); color: var(--rose);
+  }
+  .icon-btn:active { background: var(--panel-2); }
+
+  .hello { padding: 4px 22px 0; }
+  .gm { font-size: 12px; letter-spacing: .2em; color: var(--copper); }
+  .hi { font-family: var(--serif); font-weight: 600; font-size: 38px; line-height: 1.15; letter-spacing: .02em; margin-top: 6px; text-transform: uppercase; overflow-wrap: anywhere; }
+  .sub { margin-top: 8px; font-size: 14px; font-weight: 300; color: var(--dim); line-height: 1.6; }
+
+  /* ---------- 卡片 ---------- */
+  .card-wrap { padding: 0 20px; margin-top: 20px; }
+  .card-wrap.small { max-width: 280px; margin: 18px auto 0; padding: 0; width: 100%; }
+  .card {
+    position: relative; aspect-ratio: 1.586; border-radius: 20px; overflow: hidden; container-type: inline-size;
+    background: linear-gradient(135deg, #2C2827 0%, #171413 46%, #0C0B0B 100%);
+    border: 1px solid rgba(226, 180, 160, .5);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(255, 255, 255, .03);
+  }
+  .card::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(115deg, transparent 0 36%, rgba(255, 255, 255, .055) 36% 54%, transparent 54%),
+      linear-gradient(62deg, transparent 0 56%, rgba(226, 180, 160, .07) 56% 72%, transparent 72%),
+      linear-gradient(162deg, rgba(255, 255, 255, .04) 0 28%, transparent 28%);
+  }
+  .card-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 20px; padding: 6cqw; color: var(--rose); }
+  .card-brand { display: flex; align-items: center; gap: 8px; font-family: var(--serif); font-weight: 600; font-size: 15px; font-size: clamp(13px, 4.6cqw, 20px); letter-spacing: .14em; }
+  .card-nfc { opacity: .9; }
+  .card-initial {
+    position: absolute; right: 9%; top: 50%; transform: translateY(-46%);
+    font-family: var(--serif); font-weight: 600; font-size: 52px; font-size: clamp(40px, 17cqw, 76px); line-height: 1; color: #EFE3DC;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, .5);
+  }
+  .card-name {
+    position: absolute; left: 20px; left: 6cqw; bottom: 18px; bottom: 6cqw;
+    font-size: 13px; font-size: clamp(12px, 4cqw, 17px); letter-spacing: .28em; color: #EFE3DC; text-transform: uppercase; font-weight: 300;
   }
 
-  /* ---------- 內頁 ---------- */
-  .page { flex: 1; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
-  .empty { padding: 40px 22px; color: var(--muted); line-height: 1.7; }
-
-  .row {
-    display: grid; grid-template-columns: 62px 1fr auto; gap: 12px;
-    padding: 14px 22px; border-bottom: 1px solid var(--rule); align-items: start;
+  /* ---------- 面板 ---------- */
+  .panel { margin: 16px 20px 0; padding: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; }
+  .balance { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+  .label { display: flex; align-items: center; gap: 4px; color: var(--dim); font-size: 14px; }
+  .eye { width: 44px; height: 44px; margin: -12px -6px -12px 0; display: grid; place-items: center; background: none; border: 0; color: var(--muted); }
+  .amount { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+  .prefix { font-size: 14px; color: var(--dim); }
+  .n { font-size: 36px; font-weight: 500; line-height: 1.2; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+  .shop-btn {
+    width: 78px; min-height: 76px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    border: 1px solid var(--line); border-radius: 16px; background: var(--panel-2); color: var(--rose); font-size: 12px; line-height: 1.3; text-align: center;
   }
-  .date { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 4px; }
-  .note { font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
-  .amt { text-align: right; font-family: var(--serif); font-weight: 700; font-size: 19px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .amt.in { color: var(--credit); }
-  .amt.out { color: var(--seal); }
-  .after { display: block; margin-top: 2px; font-family: var(--sans); font-weight: 400; font-size: 12px; color: var(--muted); }
+  .shop-btn:active { background: #26211F; }
 
-  .item {
-    display: grid; grid-template-columns: 44px 1fr auto; gap: 14px;
-    padding: 16px 22px; border-bottom: 1px solid var(--rule); align-items: center;
+  .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .sec-head h2 { font-size: 15px; font-weight: 500; color: var(--dim); }
+  .text-link { min-height: 44px; margin: -12px 0; padding: 0 2px; background: none; border: 0; color: var(--rose); font-size: 14px; }
+
+  .quick-row { display: flex; justify-content: space-between; gap: 6px; }
+  .q { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0; background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--dim); font-size: 12px; line-height: 1.35; }
+  .q-circle {
+    width: 56px; height: 56px; flex: none; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid #3B312D; background: var(--panel-2); box-shadow: inset 0 0 0 1px rgba(226, 180, 160, .06);
   }
-  .emoji { font-size: 30px; text-align: center; line-height: 1; }
-  .item h3 { font-size: 17px; font-weight: 700; line-height: 1.4; }
-  .item .desc { margin-top: 2px; font-size: 14px; color: var(--muted); line-height: 1.5; }
-  .item .cost { margin-top: 4px; font-family: var(--serif); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .q-circle.sm { width: 48px; height: 48px; }
+  .q-emoji { font-size: 24px; line-height: 1; filter: grayscale(1) sepia(.7) brightness(1.2); }
+  .q-label { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; overflow-wrap: anywhere; }
+  .q.dim .q-circle, .q.dim .q-label { opacity: .5; }
 
-  .btn {
-    min-height: 44px; padding: 0 20px; border-radius: 10px; border: 1.5px solid var(--cover);
-    background: var(--cover); color: var(--paper); font-weight: 700; font-size: 15px;
+  /* ---------- 明細 ---------- */
+  .rrow { display: grid; grid-template-columns: 1fr auto; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .rrow:last-child { border-bottom: 0; padding-bottom: 0; }
+  .rrow:first-of-type { padding-top: 0; }
+  .note { font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+  .date { margin-top: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .amt { text-align: right; font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .amt.in { color: var(--rose); }
+  .amt.out { color: var(--dim); }
+  .after { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .empty { padding: 36px 24px; color: var(--muted); line-height: 1.7; font-size: 14px; }
+  .list { margin: 8px 20px 0; }
+  .list .rrow { padding: 15px 2px; }
+  .list .rrow:first-of-type { padding-top: 15px; }
+  .list .rrow:last-child { padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+
+  .seg { display: flex; gap: 4px; margin: 8px 20px 4px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: #131110; }
+  .seg button { flex: 1; min-height: 40px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-size: 15px; }
+  .seg button[aria-selected="true"] { background: var(--panel-2); color: var(--rose); font-weight: 500; }
+
+  /* ---------- 兌換 ---------- */
+  .item { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; padding: 16px 2px; border-bottom: 1px solid var(--line); }
+  .item h3 { font-size: 16px; font-weight: 500; line-height: 1.4; }
+  .item .desc { margin-top: 2px; font-size: 13px; font-weight: 300; color: var(--dim); line-height: 1.5; }
+  .item .cost { margin-top: 4px; font-size: 14px; color: var(--rose); font-variant-numeric: tabular-nums; }
+  .pill {
+    min-height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--copper);
+    background: transparent; color: var(--rose); font-size: 14px; font-weight: 500; white-space: nowrap;
   }
-  .btn:active:not(:disabled) { background: var(--ink); }
-  .btn.ghost { background: transparent; color: var(--cover); }
-  .btn:disabled { background: transparent; border-color: var(--rule); color: var(--muted); font-weight: 500; }
-  .btn.ghost:active { background: var(--paper-2); }
+  .pill:active:not(:disabled) { background: var(--panel-2); }
+  .pill:disabled { border-color: var(--line); color: var(--muted); font-weight: 400; }
 
-  .rec { padding: 16px 22px; border-bottom: 1px solid var(--rule); }
+  .rec { padding: 16px 2px; border-bottom: 1px solid var(--line); }
   .rec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .rec-title { font-size: 17px; font-weight: 700; line-height: 1.4; }
-  .rec-cost { font-family: var(--serif); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .rec-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 13px; color: var(--muted); }
-  .chip { border: 1px solid var(--rule); border-radius: 6px; padding: 1px 8px; font-size: 12px; color: var(--ink); }
-  .chip.pending { border-color: var(--seal); color: var(--seal); }
-  .link-btn {
-    margin-top: 4px; min-height: 44px; padding: 0; background: none; border: 0;
-    color: var(--cover); font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
-  }
+  .rec-title { font-size: 16px; font-weight: 500; line-height: 1.4; }
+  .rec-cost { color: var(--rose); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rec-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .chip { border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; font-size: 12px; color: var(--dim); }
+  .chip.pending { border-color: var(--copper); color: var(--rose); }
+  .link-btn { margin-top: 2px; min-height: 44px; padding: 0; background: none; border: 0; color: var(--rose); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ---------- 卡片頁 ---------- */
+  .info { margin: 22px 20px 0; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); }
+  .info div { display: flex; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .info div:last-child { border-bottom: 0; }
+  .info dt { color: var(--muted); }
+  .info dd { color: var(--text); text-align: right; overflow-wrap: anywhere; }
+  .center { display: flex; justify-content: center; margin-top: 22px; }
 
   /* ---------- 下方分頁 ---------- */
   .tabbar {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: min(100%, 480px); display: grid; grid-template-columns: repeat(3, 1fr);
-    background: var(--paper); border-top: 1px solid var(--rule);
-    padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 5;
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 480px); z-index: 5;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: rgba(15, 14, 14, .94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  .tab {
-    min-height: 56px; background: none; border: 0; border-top: 3px solid transparent;
-    margin-top: -1px; font-size: 16px; color: var(--muted);
-  }
-  .tab[aria-selected="true"] { border-top-color: var(--ink); color: var(--ink); font-weight: 700; }
+  .tab { min-height: 62px; background: none; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font-size: 12px; }
+  .tab[aria-selected="true"] { color: var(--rose); font-weight: 500; }
 
   /* ---------- 鎖定畫面 ---------- */
-  .lock-body {
-    flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px;
-    padding: 28px 0 calc(24px + env(safe-area-inset-bottom, 0px)); text-align: center;
-  }
-  .prompt { font-size: 17px; }
+  .lock-head { padding: calc(env(safe-area-inset-top, 0px) + 28px) 22px 0; text-align: center; }
+  .lock-head .hi { font-size: 34px; margin-top: 8px; text-transform: none; letter-spacing: .12em; }
+  .lock-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 22px 0 calc(22px + env(safe-area-inset-bottom, 0px)); text-align: center; }
+  .prompt { font-size: 16px; color: var(--dim); }
   .dots { display: flex; justify-content: center; gap: 18px; }
-  .dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink); }
-  .dot.on { background: var(--ink); }
+  .dot { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--copper); }
+  .dot.on { background: var(--rose); border-color: var(--rose); }
   .dots.shake { animation: shake .4s; }
-  .msg { min-height: 1.6em; padding: 0 22px; font-size: 14px; color: var(--seal); line-height: 1.6; }
-  .pad {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 0;
-    width: 100%; max-width: 320px; margin: 0 auto; padding: 0 22px;
-  }
+  .msg { min-height: 1.6em; padding: 0 22px; font-size: 14px; color: #E59A8C; line-height: 1.6; }
+  .msg.soft { color: var(--muted); }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 0; width: 100%; max-width: 300px; margin: 0 auto; padding: 0 22px; }
   .key {
-    width: 72px; height: 72px; justify-self: center; border-radius: 50%;
-    border: 1px solid var(--rule); background: transparent;
-    font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--ink);
-    display: grid; place-items: center;
+    width: 66px; height: 66px; justify-self: center; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 26px; font-weight: 300;
   }
-  .key:active:not(:disabled) { background: var(--paper-2); }
-  .key:disabled { color: var(--muted); opacity: .5; }
-  .key.aux { border-color: transparent; }
-  .key svg { width: 26px; height: 26px; }
-  .waves { width: 64px; height: 64px; margin: 0 auto; color: var(--cover); }
+  .key:active:not(:disabled) { background: var(--panel-2); border-color: var(--copper); }
+  .key:disabled { opacity: .35; }
+  .key.aux { border-color: transparent; color: var(--muted); }
+  .waves { width: 56px; height: 56px; margin: 0 auto; color: var(--rose); }
 
   /* ---------- 底部彈出視窗 ---------- */
-  .backdrop {
-    position: fixed; inset: 0; z-index: 20; background: rgba(23, 48, 44, .45);
-    display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease-out;
-  }
+  .backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, .6); display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease-out; }
   .sheet {
-    width: min(100%, 480px); background: var(--paper); border-radius: 18px 18px 0 0;
-    padding: 24px 22px calc(22px + env(safe-area-inset-bottom, 0px)); animation: rise .22s ease-out;
+    width: min(100%, 480px); background: #1A1716; border-top: 1px solid var(--line); border-radius: 22px 22px 0 0;
+    padding: 26px 22px calc(22px + env(safe-area-inset-bottom, 0px)); animation: rise .22s ease-out;
   }
-  .sheet h2 { font-family: var(--serif); font-weight: 700; font-size: 22px; line-height: 1.4; }
-  .sheet p { margin-top: 10px; line-height: 1.7; }
+  .sheet h2 { font-size: 20px; font-weight: 500; line-height: 1.4; }
+  .sheet p { margin-top: 10px; line-height: 1.7; color: var(--dim); font-size: 15px; }
   .sheet textarea, .sheet input {
     width: 100%; margin-top: 14px; padding: 12px; font: inherit; font-size: 16px; line-height: 1.6;
-    border: 1px solid var(--rule); border-radius: 10px; background: #fff; color: var(--ink); resize: none;
+    border: 1px solid var(--line); border-radius: 12px; background: #121010; color: var(--text); resize: none;
   }
+  .sheet textarea::placeholder, .sheet input::placeholder { color: var(--muted); }
   .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+  .btn { min-height: 48px; border-radius: 12px; border: 1px solid var(--copper); background: linear-gradient(180deg, #EBC5B3, #C98F78); color: #1A1210; font-weight: 700; font-size: 16px; }
+  .btn.ghost { background: transparent; color: var(--rose); font-weight: 500; }
+  .btn:disabled { opacity: .5; }
 
-  /* ---------- 印章 ---------- */
-  .seal-wrap {
-    position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 26px;
-    background: rgba(238, 242, 236, .93); text-align: center; padding: 24px;
-  }
+  /* ---------- 印章與提示 ---------- */
+  .seal-wrap { position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 26px; background: rgba(10, 9, 9, .92); text-align: center; padding: 24px; }
   .seal {
-    color: var(--seal); border: 5px solid var(--seal); border-radius: 10px;
-    padding: 14px 24px 14px 30px; font-family: var(--serif); font-weight: 900; font-size: 46px; letter-spacing: .12em;
-    box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px var(--seal);
-    transform: rotate(-8deg); animation: stamp .4s cubic-bezier(.2, 1.35, .4, 1) both;
+    color: var(--rose); border: 3px solid var(--rose); border-radius: 12px; padding: 14px 24px 14px 30px;
+    font-family: var(--serif); font-weight: 600; font-size: 44px; letter-spacing: .14em;
+    box-shadow: inset 0 0 0 5px #0F0E0E, inset 0 0 0 6px var(--copper), 0 0 40px rgba(226, 180, 160, .25);
+    transform: rotate(-7deg); animation: stamp .42s cubic-bezier(.2, 1.35, .4, 1) both;
   }
-  .seal-title { font-family: var(--serif); font-weight: 700; font-size: 20px; line-height: 1.5; }
+  .seal-title { font-size: 20px; font-weight: 500; line-height: 1.5; }
   .seal-bal { margin-top: 4px; color: var(--muted); font-size: 15px; }
-
   .toast {
-    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-    z-index: 40; max-width: min(90vw, 420px); padding: 12px 18px; border-radius: 10px;
-    background: var(--ink); color: var(--paper); font-size: 15px; line-height: 1.5; text-align: center;
+    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 40;
+    max-width: min(90vw, 420px); padding: 12px 18px; border-radius: 12px; border: 1px solid var(--line);
+    background: #26211F; color: var(--text); font-size: 15px; line-height: 1.5; text-align: center;
   }
 
   @keyframes fade { from { opacity: 0; } }
   @keyframes rise { from { transform: translateY(40px); opacity: .6; } }
-  @keyframes stamp { from { transform: rotate(-22deg) scale(2.3); opacity: 0; } to { transform: rotate(-8deg) scale(1); opacity: 1; } }
+  @keyframes stamp { from { transform: rotate(-22deg) scale(2.3); opacity: 0; } to { transform: rotate(-7deg) scale(1); opacity: 1; } }
   @keyframes shake { 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -204,10 +256,11 @@ const CONFIG = {
   SUPABASE_URL: 'https://xiaaaqrarfsicrtziqzb.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_wMWqy16fq-QEfeEtUNz9gA_cc1SFP-5',
   BANK_NAME: '愛情銀行',
-  UNIT: '愛心',       // 貨幣單位
-  PARTNER: '他',      // 通知文案裡怎麼稱呼你,例如「他」或你的暱稱
-  AUTO_LOCK_MINUTES: 5, // 離開頁面超過這麼久,回來要重新輸入 PIN
-  ALLOW_MANUAL_TOKEN: true // 測試用:沒有 NFC 卡片時,可在鎖定畫面手動貼上卡片代碼。送出禮物前改成 false
+  UNIT: '愛心',                              // 貨幣單位
+  PARTNER: '他',                             // 通知文案裡怎麼稱呼你,例如「他」或你的暱稱
+  SUBTITLE: '歡迎回來,這裡是專屬於妳的愛情銀行', // 首頁問候下方的小字
+  AUTO_LOCK_MINUTES: 5,                      // 離開頁面超過這麼久,回來要重新輸入 PIN
+  ALLOW_MANUAL_TOKEN: true                   // 測試用:沒有 NFC 卡片時,可在鎖定畫面手動貼上卡片代碼。送出禮物前改成 false
 };
 
 /* =========================================================
@@ -226,18 +279,33 @@ const store = {
   del(k) { try { sessionStorage.removeItem(k); } catch {} }
 };
 
+const ICON = {
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
+  gift: '<rect x="3.5" y="8.5" width="17" height="4" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8.5V20"/><path d="M12 8.5C9.8 8.5 7.5 8 7.5 6.2A1.9 1.9 0 0 1 9.4 4.5C11 4.5 12 6.5 12 8.5ZM12 8.5c2.2 0 4.5-.5 4.5-2.3a1.9 1.9 0 0 0-1.9-1.7c-1.6 0-2.6 2-2.6 4Z"/>',
+  list: '<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/>',
+  card: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18M6.5 15h4"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeoff: '<path d="M3 3l18 18"/><path d="M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-3.2 4"/><path d="M6.5 7A16 16 0 0 0 2.5 12S6 18.5 12 18.5a9.5 9.5 0 0 0 3.6-.7"/>',
+  heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 7.6 4.2 4.2 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z"/>',
+  nfc: '<path d="M8 8.5c1.5 2.2 1.5 4.8 0 7"/><path d="M12 5.5c3 4 3 9 0 13"/><path d="M16 2.8c4.2 5.5 4.2 12.9 0 18.4"/>',
+  back: '<path d="M21 5H9l-6 7 6 7h12z"/><path d="M16 9.5l-5 5M11 9.5l5 5"/>'
+};
+const icon = (n, s = 22) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
+
 const ERR_TEXT = {
   insufficient: '餘額不夠,還差一點',
   duplicate: '剛剛已經送出了,請稍候',
   reward_unavailable: '這個項目暫時不能兌換',
   not_refundable: '這筆紀錄目前不能申請退款'
 };
-const STATUS_TEXT = {
-  completed: '已兌換',
-  refund_requested: '退款審核中',
-  refunded: '已退款',
-  refund_rejected: '退款未通過'
-};
+const STATUS_TEXT = { completed: '已兌換', refund_requested: '退款審核中', refunded: '已退款', refund_rejected: '退款未通過' };
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 5 ? 'GOOD NIGHT' : h < 12 ? 'GOOD MORNING' : h < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
+}
 
 /* =========================================================
    與 Supabase 溝通(只呼叫四支 RPC,不直接碰資料表)
@@ -261,10 +329,9 @@ async function rpc(fn, args) {
    ========================================================= */
 const state = {
   token: null, session: null, data: null,
-  tab: 'ledger', pin: '', busy: false,
-  error: '', lockUntil: 0, shake: false,
-  loading: false, loadError: false,
-  sheet: null
+  tab: 'home', recTab: 'ledger', hideBal: false,
+  pin: '', busy: false, error: '', lockUntil: 0, shake: false,
+  loading: false, loadError: false, sheet: null
 };
 
 function init() {
@@ -274,7 +341,6 @@ function init() {
     // 每次刷卡都視為新的一次登入:存下 token、清掉舊 session、把 token 從網址列移除
     store.set('lb_token', m[1]);
     store.del('lb_session');
-    // 把代碼從網址列移除。用 file:// 在本機測試時瀏覽器會拒絕這個動作,失敗也不影響流程
     if (location.protocol !== 'file:') {
       try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
     }
@@ -296,103 +362,152 @@ function render() {
   updateTimers();
 }
 
+function cardHtml(name) {
+  const initial = name ? [...name][0].toUpperCase() : '';
+  return `<div class="card" aria-hidden="true">
+    <div class="card-top"><div class="card-brand">${icon('heart', 20)}<span>${esc(CONFIG.BANK_NAME)}</span></div><span class="card-nfc">${icon('nfc', 22)}</span></div>
+    ${initial ? `<div class="card-initial">${esc(initial)}</div>` : ''}
+    ${name ? `<div class="card-name">${esc(name)}</div>` : ''}
+  </div>`;
+}
+
 function viewLoading() {
-  return `<div class="screen"><div class="cover"><p class="bank">${esc(CONFIG.BANK_NAME)}</p></div><p class="empty">讀取中…</p></div>`;
+  return `<div class="screen"><div class="lock-head"><p class="hi">${esc(CONFIG.BANK_NAME)}</p></div><p class="empty" style="text-align:center">讀取中…</p></div>`;
 }
 
 function viewRetry() {
-  return `<div class="screen"><div class="cover"><p class="bank">${esc(CONFIG.BANK_NAME)}</p></div>
-    <div class="empty"><p>暫時連不上,請確認網路後再試一次。</p><p style="margin-top:16px"><button class="btn" data-action="retry">重新讀取</button></p></div></div>`;
+  return `<div class="screen"><div class="lock-head"><p class="hi">${esc(CONFIG.BANK_NAME)}</p></div>
+    <div class="empty" style="text-align:center"><p>暫時連不上,請確認網路後再試一次。</p><p style="margin-top:18px"><button class="pill" data-action="retry">重新讀取</button></p></div></div>`;
 }
 
+/* ---------- 鎖定 ---------- */
 function viewLock() {
+  const head = `<div class="lock-head"><p class="gm">WELCOME BACK</p><h1 class="hi">${esc(CONFIG.BANK_NAME)}</h1></div>
+    <div class="card-wrap small">${cardHtml('')}</div>`;
+
   if (!state.token) {
-    return `<div class="screen">
-      <div class="cover"><p class="bank-big">${esc(CONFIG.BANK_NAME)}</p></div>
+    return `<div class="screen">${head}
       <div class="lock-body">
-        <svg class="waves" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true">
-          <path d="M14 22c5 6 5 14 0 20"/><path d="M26 15c8 10 8 24 0 34"/><path d="M38 8c11 14 11 34 0 48"/>
-        </svg>
+        <svg class="waves" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">${ICON.nfc}</svg>
         <p class="prompt">請用卡片感應手機</p>
-        <p class="msg" style="color:var(--muted)">${esc(state.error) || '把卡片貼近 iPhone 上方,出現通知後點一下。'}</p>
+        <p class="msg soft">${esc(state.error) || '把卡片貼近 iPhone 上方,出現通知後點一下。'}</p>
         ${CONFIG.ALLOW_MANUAL_TOKEN ? `<button class="link-btn" style="margin:0 auto" data-action="ask-token">沒有卡片?輸入卡片代碼</button>` : ''}
       </div></div>`;
   }
+
   const locked = state.lockUntil > Date.now();
   const left = Math.ceil((state.lockUntil - Date.now()) / 1000);
   const dots = [0, 1, 2, 3].map((i) => `<span class="dot ${i < state.pin.length ? 'on' : ''}"></span>`).join('');
   const dis = state.busy || locked ? 'disabled' : '';
   const num = (k) => `<button class="key" data-action="key" data-v="${k}" ${dis}>${k}</button>`;
-  const back = `<button class="key aux" data-action="back" aria-label="刪除一碼" ${dis}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M16 9.5l-5 5M11 9.5l5 5"/></svg></button>`;
-  return `<div class="screen">
-    <div class="cover"><p class="bank-big">${esc(CONFIG.BANK_NAME)}</p></div>
+  const back = `<button class="key aux" data-action="back" aria-label="刪除一碼" ${dis}>${icon('back', 26)}</button>`;
+  return `<div class="screen">${head}
     <div class="lock-body">
       <p class="prompt">請輸入 4 位數 PIN</p>
       <div class="dots ${state.shake ? 'shake' : ''}" aria-label="已輸入 ${state.pin.length} 碼">${dots}</div>
       <p class="msg" id="msg">${esc(locked ? lockText(left) : state.error)}</p>
-      <div class="pad">
-        ${['1','2','3','4','5','6','7','8','9'].map(num).join('')}
-        <span></span>${num('0')}${back}
-      </div>
+      <div class="pad">${['1','2','3','4','5','6','7','8','9'].map(num).join('')}<span></span>${num('0')}${back}</div>
     </div></div>`;
 }
 
+/* ---------- 已登入 ---------- */
 function withRunning(ledger, balance) {
   let run = Number(balance);
   return ledger.map((r) => { const out = { ...r, after: run }; run -= r.amount; return out; });
 }
 
-function viewHome() {
-  const d = state.data;
-  let body = '';
+function topbar(title) {
+  return `<header class="topbar"><span class="top-title">${esc(title || '')}</span>
+    <div class="top-actions">
+      <button class="icon-btn" data-action="refresh" aria-label="重新整理">${icon('refresh', 20)}</button>
+      <button class="icon-btn" data-action="lock" aria-label="上鎖">${icon('lock', 20)}</button>
+    </div></header>`;
+}
 
-  if (state.tab === 'ledger') {
+function ledgerRow(r, showAfter) {
+  return `<div class="rrow">
+    <div><p class="note">${esc(r.note || '入帳')}</p><p class="date">${fmtDate(r.created_at)}</p></div>
+    <p class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${fmt(Math.abs(r.amount))}${showAfter ? `<span class="after">結餘 ${fmt(r.after)}</span>` : ''}</p>
+  </div>`;
+}
+
+function tabHome(d) {
+  const bal = state.hideBal ? '••••' : fmt(d.balance);
+  const quick = d.rewards.slice(0, 5).map((r) => `<button class="q ${d.balance < r.cost ? 'dim' : ''}" data-action="ask-redeem" data-id="${esc(r.id)}">
+      <span class="q-circle"><span class="q-emoji">${esc(r.emoji || '🎁')}</span></span><span class="q-label">${esc(r.title)}</span></button>`).join('');
+  const recent = withRunning(d.ledger, d.balance).slice(0, 3);
+  return `${topbar('')}
+    <section class="hello">
+      <p class="gm">${greeting()}</p>
+      <h1 class="hi">Hi, ${esc(d.display_name)}</h1>
+      <p class="sub">${esc(CONFIG.SUBTITLE)}</p>
+    </section>
+    <div class="card-wrap">${cardHtml(d.display_name)}</div>
+    <section class="panel balance">
+      <div>
+        <p class="label">可用餘額<button class="eye" data-action="toggle-bal" aria-label="${state.hideBal ? '顯示餘額' : '隱藏餘額'}">${icon(state.hideBal ? 'eyeoff' : 'eye', 20)}</button></p>
+        <p class="amount"><span class="prefix">${esc(CONFIG.UNIT)}</span><span class="n">${bal}</span></p>
+      </div>
+      <button class="shop-btn" data-action="tab" data-v="shop">${icon('gift', 24)}<span>前往兌換</span></button>
+    </section>
+    ${quick ? `<section class="panel"><div class="sec-head"><h2>經常兌換</h2><button class="text-link" data-action="tab" data-v="shop">全部</button></div><div class="quick-row">${quick}</div></section>` : ''}
+    <section class="panel"><div class="sec-head"><h2>最近明細</h2><button class="text-link" data-action="tab" data-v="records">查看全部</button></div>
+      ${recent.length ? recent.map((r) => ledgerRow(r, false)).join('') : `<p class="empty" style="padding:8px 0">還沒有任何紀錄。有新的入帳時,會出現在這裡。</p>`}
+    </section>`;
+}
+
+function tabShop(d) {
+  const items = d.rewards.length
+    ? d.rewards.map((r) => {
+        const short = d.balance < r.cost;
+        return `<div class="item">
+          <span class="q-circle sm"><span class="q-emoji">${esc(r.emoji || '🎁')}</span></span>
+          <div><h3>${esc(r.title)}</h3>${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}<p class="cost">${esc(CONFIG.UNIT)} ${fmt(r.cost)}</p></div>
+          <button class="pill" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? `還差 ${fmt(r.cost - d.balance)}` : '兌換'}</button>
+        </div>`;
+      }).join('')
+    : `<p class="empty">商店暫時沒有商品。</p>`;
+  return `${topbar('兌換')}<div class="list">${items}</div>`;
+}
+
+function tabRecords(d) {
+  const seg = `<div class="seg" role="tablist">
+    <button role="tab" aria-selected="${state.recTab === 'ledger'}" data-action="rec-tab" data-v="ledger">餘額明細</button>
+    <button role="tab" aria-selected="${state.recTab === 'redeem'}" data-action="rec-tab" data-v="redeem">兌換紀錄</button></div>`;
+  let body;
+  if (state.recTab === 'ledger') {
     const rows = withRunning(d.ledger, d.balance);
-    body = rows.length
-      ? rows.map((r) => `<div class="row">
-          <span class="date">${fmtDate(r.created_at)}</span>
-          <span class="note">${esc(r.note || '入帳')}</span>
-          <span class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${fmt(Math.abs(r.amount))}<span class="after">結餘 ${fmt(r.after)}</span></span>
-        </div>`).join('')
+    body = rows.length ? `<div class="list">${rows.map((r) => ledgerRow(r, true)).join('')}</div>`
       : `<p class="empty">還沒有任何紀錄。有新的入帳時,會出現在這裡。</p>`;
-  }
-
-  if (state.tab === 'shop') {
-    body = d.rewards.length
-      ? d.rewards.map((r) => {
-          const short = d.balance < r.cost;
-          return `<div class="item">
-            <span class="emoji" aria-hidden="true">${esc(r.emoji || '🎁')}</span>
-            <div><h3>${esc(r.title)}</h3>${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}
-              <p class="cost">${fmt(r.cost)} ${esc(CONFIG.UNIT)}</p></div>
-            <button class="btn" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? `還差 ${fmt(r.cost - d.balance)}` : '兌換'}</button>
-          </div>`;
-        }).join('')
-      : `<p class="empty">商店暫時沒有商品。</p>`;
-  }
-
-  if (state.tab === 'history') {
+  } else {
     body = d.redemptions.length
-      ? d.redemptions.map((r) => `<div class="rec">
-          <div class="rec-head"><span class="rec-title">${esc(r.reward_title)}</span><span class="rec-cost">${fmt(r.cost)} ${esc(CONFIG.UNIT)}</span></div>
+      ? `<div class="list">${d.redemptions.map((r) => `<div class="rec">
+          <div class="rec-head"><span class="rec-title">${esc(r.reward_title)}</span><span class="rec-cost">${esc(CONFIG.UNIT)} ${fmt(r.cost)}</span></div>
           <div class="rec-meta"><span>${fmtDate(r.created_at)}</span><span class="chip ${r.status === 'refund_requested' ? 'pending' : ''}">${STATUS_TEXT[r.status] || esc(r.status)}</span></div>
           ${r.status === 'completed' ? `<button class="link-btn" data-action="ask-refund" data-id="${esc(r.id)}">申請退款</button>` : ''}
-        </div>`).join('')
-      : `<p class="empty">還沒有兌換過任何項目。到「商店」看看吧。</p>`;
+        </div>`).join('')}</div>`
+      : `<p class="empty">還沒有兌換過任何項目。到「兌換」看看吧。</p>`;
   }
+  return `${topbar('紀錄')}${seg}${body}`;
+}
 
-  const tab = (id, label) => `<button class="tab" role="tab" aria-selected="${state.tab === id}" data-action="tab" data-v="${id}">${label}</button>`;
-  return `<div class="screen">
-    <header class="cover">
-      <div class="cover-top"><p class="bank">${esc(CONFIG.BANK_NAME)}</p><button class="lock-btn" data-action="lock">上鎖</button></div>
-      <p class="holder">${esc(d.display_name)}</p>
-      <p class="bal-label">目前餘額</p>
-      <p class="bal"><span class="num">${fmt(d.balance)}</span><span class="unit">${esc(CONFIG.UNIT)}</span></p>
-    </header>
-    <section class="page" role="tabpanel">${body}</section>
-    <nav class="tabbar" role="tablist" aria-label="主選單">${tab('ledger', '明細')}${tab('shop', '商店')}${tab('history', '紀錄')}</nav>
-  </div>`;
+function tabCard(d) {
+  return `${topbar('卡片')}
+    <div class="card-wrap">${cardHtml(d.display_name)}</div>
+    <dl class="info">
+      <div><dt>持卡人</dt><dd>${esc(d.display_name)}</dd></div>
+      <div><dt>帳戶</dt><dd>${esc(CONFIG.BANK_NAME)}</dd></div>
+      <div><dt>登入方式</dt><dd>感應卡片加 PIN</dd></div>
+    </dl>
+    <div class="center"><button class="pill" data-action="lock">上鎖</button></div>`;
+}
+
+function viewHome() {
+  const d = state.data;
+  const body = state.tab === 'shop' ? tabShop(d) : state.tab === 'records' ? tabRecords(d) : state.tab === 'card' ? tabCard(d) : tabHome(d);
+  const tab = (id, label, ic) => `<button class="tab" role="tab" aria-selected="${state.tab === id}" data-action="tab" data-v="${id}">${icon(ic, 24)}<span>${label}</span></button>`;
+  return `<div class="screen"><div class="page">${body}</div>
+    <nav class="tabbar" role="tablist" aria-label="主選單">${tab('home', '首頁', 'home')}${tab('shop', '兌換', 'gift')}${tab('records', '紀錄', 'list')}${tab('card', '卡片', 'card')}</nav></div>`;
 }
 
 /* ---------- 彈出視窗 ---------- */
@@ -401,22 +516,23 @@ function renderSheet() {
   const s = state.sheet;
   if (!s) { root.innerHTML = ''; return; }
   const dis = state.busy ? 'disabled' : '';
+  const open = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>`;
   if (s.type === 'redeem') {
     const after = state.data.balance - s.reward.cost;
-    root.innerHTML = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>
+    root.innerHTML = `${open}
       <h2 id="sh-t">兌換「${esc(s.reward.title)}」?</h2>
       <p>會花掉 ${fmt(s.reward.cost)} ${esc(CONFIG.UNIT)},剩下 ${fmt(after)} ${esc(CONFIG.UNIT)}。兌換後${esc(CONFIG.PARTNER)}會馬上收到通知。</p>
       <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-redeem" ${dis}>${state.busy ? '處理中…' : '確定兌換'}</button></div>
     </div></div>`;
   } else if (s.type === 'refund') {
-    root.innerHTML = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>
+    root.innerHTML = `${open}
       <h2 id="sh-t">申請退款「${esc(s.redemption.reward_title)}」</h2>
       <p>送出後要等${esc(CONFIG.PARTNER)}審核,通過後 ${fmt(s.redemption.cost)} ${esc(CONFIG.UNIT)} 會回到餘額。</p>
       <textarea id="refund-reason" rows="3" maxlength="200" placeholder="想說的話(選填)" aria-label="退款理由,選填"></textarea>
       <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-refund" ${dis}>${state.busy ? '送出中…' : '送出申請'}</button></div>
     </div></div>`;
   } else if (s.type === 'token') {
-    root.innerHTML = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>
+    root.innerHTML = `${open}
       <h2 id="sh-t">輸入卡片代碼</h2>
       <p>測試用。貼上卡片網址裡 t= 後面的那一串,或整個網址都可以。</p>
       <input id="token-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="卡片代碼">
@@ -466,6 +582,7 @@ function updateTimers() {
 
 function lockNow(message) {
   state.session = null; state.data = null; state.pin = ''; state.sheet = null;
+  state.tab = 'home'; state.recTab = 'ledger';
   state.error = message || '';
   store.del('lb_session');
   renderSheet();
@@ -489,6 +606,7 @@ async function submitPin() {
     if (r.ok) {
       state.session = r.session;
       store.set('lb_session', r.session);
+      state.tab = 'home';
       state.busy = false;
       await loadDashboard();
       return;
@@ -517,11 +635,13 @@ async function loadDashboard(silent) {
     state.data = await rpc('get_dashboard', { p_session: state.session });
     state.loading = false; state.loadError = false;
     render();
+    return true;
   } catch (e) {
     state.loading = false;
-    if (e.code === 'session_expired') { lockNow('登入已過期,請重新輸入 PIN'); return; }
-    if (silent) { toast('更新失敗,請稍後再試'); return; }
+    if (e.code === 'session_expired') { lockNow('登入已過期,請重新輸入 PIN'); return false; }
+    if (silent) { toast('更新失敗,請稍後再試'); return false; }
     state.loadError = true; render();
+    return false;
   }
 }
 
@@ -569,11 +689,16 @@ document.addEventListener('click', (e) => {
     case 'key': pressKey(el.dataset.v); break;
     case 'back': if (!state.busy && state.pin) { state.pin = state.pin.slice(0, -1); state.error = ''; render(); } break;
     case 'tab': state.tab = el.dataset.v; render(); window.scrollTo(0, 0); break;
+    case 'rec-tab': state.recTab = el.dataset.v; render(); break;
+    case 'toggle-bal': state.hideBal = !state.hideBal; render(); break;
+    case 'refresh': loadDashboard(true).then((ok) => { if (ok) toast('已更新'); }); break;
     case 'lock': lockNow(); break;
     case 'retry': loadDashboard(); break;
     case 'ask-redeem': {
       const reward = state.data.rewards.find((r) => r.id === el.dataset.id);
-      if (reward) { state.sheet = { type: 'redeem', reward }; renderSheet(); }
+      if (!reward) break;
+      if (state.data.balance < reward.cost) { toast(`還差 ${fmt(reward.cost - state.data.balance)} ${CONFIG.UNIT}`); break; }
+      state.sheet = { type: 'redeem', reward }; renderSheet();
       break;
     }
     case 'ask-refund': {
@@ -588,8 +713,10 @@ document.addEventListener('click', (e) => {
       break;
     case 'confirm-token': {
       if (!CONFIG.ALLOW_MANUAL_TOKEN) break;
-      const v = (document.getElementById('token-input')?.value || '').trim().replace(/^.*t=/, '');
-      if (!/^[0-9a-fA-F]{16,}$/.test(v)) {
+      const raw = document.getElementById('token-input')?.value || '';
+      const found = raw.match(/[0-9a-fA-F]{32,}/); // 容許前後有引號、空白、換行,或貼了整個網址
+      const v = found ? found[0] : '';
+      if (!v) {
         document.getElementById('token-msg').textContent = '代碼格式不對,請貼上完整那串英數字';
         break;
       }
