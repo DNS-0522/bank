@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F4A44">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="愛情銀行">
+<title>愛情銀行</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cover: #1F4A44;       /* 存摺封面的深綠 */
+    --paper: #EEF2EC;       /* 內頁紙色 */
+    --paper-2: #E3EAE1;
+    --ink: #17302C;
+    --rule: #C3D0C6;        /* 存摺的橫線 */
+    --muted: #4C6760;
+    --credit: #1F6B5E;      /* 入帳 */
+    --seal: #B83A2D;        /* 支出、印章 */
+    --serif: "Noto Serif TC", "Songti TC", "PMingLiU", "Noto Serif CJK TC", serif;
+    --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; }
+  :focus-visible { outline: 3px solid var(--seal); outline-offset: 2px; }
+
+  .screen { max-width: 480px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+
+  /* ---------- 封面 ---------- */
+  .cover {
+    background: var(--cover);
+    color: var(--paper);
+    padding: calc(env(safe-area-inset-top, 0px) + 20px) 22px 28px;
+  }
+  .cover-top { display: flex; justify-content: space-between; align-items: center; }
+  .bank { font-family: var(--serif); font-weight: 700; font-size: 18px; letter-spacing: .12em; }
+  .bank-big { font-family: var(--serif); font-weight: 900; font-size: 36px; letter-spacing: .14em; margin: 28px 0 6px; }
+  .holder { margin-top: 20px; font-size: 15px; opacity: .85; }
+  .bal-label { margin-top: 22px; font-size: 13px; opacity: .8; }
+  .bal { display: flex; align-items: baseline; gap: 8px; }
+  .num { font-family: var(--serif); font-weight: 900; font-size: 54px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .unit { font-size: 16px; opacity: .85; }
+  .lock-btn {
+    min-height: 44px; padding: 0 4px; background: none; border: 0;
+    color: var(--paper); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; opacity: .9;
+  }
+
+  /* ---------- 內頁 ---------- */
+  .page { flex: 1; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .empty { padding: 40px 22px; color: var(--muted); line-height: 1.7; }
+
+  .row {
+    display: grid; grid-template-columns: 62px 1fr auto; gap: 12px;
+    padding: 14px 22px; border-bottom: 1px solid var(--rule); align-items: start;
+  }
+  .date { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 4px; }
+  .note { font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
+  .amt { text-align: right; font-family: var(--serif); font-weight: 700; font-size: 19px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .amt.in { color: var(--credit); }
+  .amt.out { color: var(--seal); }
+  .after { display: block; margin-top: 2px; font-family: var(--sans); font-weight: 400; font-size: 12px; color: var(--muted); }
+
+  .item {
+    display: grid; grid-template-columns: 44px 1fr auto; gap: 14px;
+    padding: 16px 22px; border-bottom: 1px solid var(--rule); align-items: center;
+  }
+  .emoji { font-size: 30px; text-align: center; line-height: 1; }
+  .item h3 { font-size: 17px; font-weight: 700; line-height: 1.4; }
+  .item .desc { margin-top: 2px; font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .item .cost { margin-top: 4px; font-family: var(--serif); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+
+  .btn {
+    min-height: 44px; padding: 0 20px; border-radius: 10px; border: 1.5px solid var(--cover);
+    background: var(--cover); color: var(--paper); font-weight: 700; font-size: 15px;
+  }
+  .btn:active:not(:disabled) { background: var(--ink); }
+  .btn.ghost { background: transparent; color: var(--cover); }
+  .btn:disabled { background: transparent; border-color: var(--rule); color: var(--muted); font-weight: 500; }
+  .btn.ghost:active { background: var(--paper-2); }
+
+  .rec { padding: 16px 22px; border-bottom: 1px solid var(--rule); }
+  .rec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .rec-title { font-size: 17px; font-weight: 700; line-height: 1.4; }
+  .rec-cost { font-family: var(--serif); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rec-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .chip { border: 1px solid var(--rule); border-radius: 6px; padding: 1px 8px; font-size: 12px; color: var(--ink); }
+  .chip.pending { border-color: var(--seal); color: var(--seal); }
+  .link-btn {
+    margin-top: 4px; min-height: 44px; padding: 0; background: none; border: 0;
+    color: var(--cover); font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  }
+
+  /* ---------- 下方分頁 ---------- */
+  .tabbar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: min(100%, 480px); display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--paper); border-top: 1px solid var(--rule);
+    padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 5;
+  }
+  .tab {
+    min-height: 56px; background: none; border: 0; border-top: 3px solid transparent;
+    margin-top: -1px; font-size: 16px; color: var(--muted);
+  }
+  .tab[aria-selected="true"] { border-top-color: var(--ink); color: var(--ink); font-weight: 700; }
+
+  /* ---------- 鎖定畫面 ---------- */
+  .lock-body {
+    flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px;
+    padding: 28px 0 calc(24px + env(safe-area-inset-bottom, 0px)); text-align: center;
+  }
+  .prompt { font-size: 17px; }
+  .dots { display: flex; justify-content: center; gap: 18px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink); }
+  .dot.on { background: var(--ink); }
+  .dots.shake { animation: shake .4s; }
+  .msg { min-height: 1.6em; padding: 0 22px; font-size: 14px; color: var(--seal); line-height: 1.6; }
+  .pad {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 0;
+    width: 100%; max-width: 320px; margin: 0 auto; padding: 0 22px;
+  }
+  .key {
+    width: 72px; height: 72px; justify-self: center; border-radius: 50%;
+    border: 1px solid var(--rule); background: transparent;
+    font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--ink);
+    display: grid; place-items: center;
+  }
+  .key:active:not(:disabled) { background: var(--paper-2); }
+  .key:disabled { color: var(--muted); opacity: .5; }
+  .key.aux { border-color: transparent; }
+  .key svg { width: 26px; height: 26px; }
+  .waves { width: 64px; height: 64px; margin: 0 auto; color: var(--cover); }
+
+  /* ---------- 底部彈出視窗 ---------- */
+  .backdrop {
+    position: fixed; inset: 0; z-index: 20; background: rgba(23, 48, 44, .45);
+    display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease-out;
+  }
+  .sheet {
+    width: min(100%, 480px); background: var(--paper); border-radius: 18px 18px 0 0;
+    padding: 24px 22px calc(22px + env(safe-area-inset-bottom, 0px)); animation: rise .22s ease-out;
+  }
+  .sheet h2 { font-family: var(--serif); font-weight: 700; font-size: 22px; line-height: 1.4; }
+  .sheet p { margin-top: 10px; line-height: 1.7; }
+  .sheet textarea, .sheet input {
+    width: 100%; margin-top: 14px; padding: 12px; font: inherit; font-size: 16px; line-height: 1.6;
+    border: 1px solid var(--rule); border-radius: 10px; background: #fff; color: var(--ink); resize: none;
+  }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+
+  /* ---------- 印章 ---------- */
+  .seal-wrap {
+    position: fixed; inset: 0; z-index: 30; display: grid; place-content: center; justify-items: center; gap: 26px;
+    background: rgba(238, 242, 236, .93); text-align: center; padding: 24px;
+  }
+  .seal {
+    color: var(--seal); border: 5px solid var(--seal); border-radius: 10px;
+    padding: 14px 24px 14px 30px; font-family: var(--serif); font-weight: 900; font-size: 46px; letter-spacing: .12em;
+    box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4.5px var(--seal);
+    transform: rotate(-8deg); animation: stamp .4s cubic-bezier(.2, 1.35, .4, 1) both;
+  }
+  .seal-title { font-family: var(--serif); font-weight: 700; font-size: 20px; line-height: 1.5; }
+  .seal-bal { margin-top: 4px; color: var(--muted); font-size: 15px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    z-index: 40; max-width: min(90vw, 420px); padding: 12px 18px; border-radius: 10px;
+    background: var(--ink); color: var(--paper); font-size: 15px; line-height: 1.5; text-align: center;
+  }
+
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes rise { from { transform: translateY(40px); opacity: .6; } }
+  @keyframes stamp { from { transform: rotate(-22deg) scale(2.3); opacity: 0; } to { transform: rotate(-8deg) scale(1); opacity: 1; } }
+  @keyframes shake { 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div id="sheet-root"></div>
+<div id="seal-root"></div>
+<div id="toast-root" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   設定:只需要改這一區
+   ========================================================= */
+const CONFIG = {
+  SUPABASE_URL: 'https://xiaaaqrarfsicrtziqzb.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_wMWqy16fq-QEfeEtUNz9gA_cc1SFP-5',
+  BANK_NAME: '愛情銀行',
+  UNIT: '愛心',       // 貨幣單位
+  PARTNER: '他',      // 通知文案裡怎麼稱呼你,例如「他」或你的暱稱
+  AUTO_LOCK_MINUTES: 5, // 離開頁面超過這麼久,回來要重新輸入 PIN
+  ALLOW_MANUAL_TOKEN: true // 測試用:沒有 NFC 卡片時,可在鎖定畫面手動貼上卡片代碼。送出禮物前改成 false
+};
+
+/* =========================================================
+   小工具
+   ========================================================= */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => Number(n).toLocaleString('en-US');
+const fmtDate = (iso) => {
+  const d = new Date(iso);
+  return `${String(d.getFullYear()).slice(2)}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+};
+const store = {
+  get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
+  del(k) { try { sessionStorage.removeItem(k); } catch {} }
+};
+
+const ERR_TEXT = {
+  insufficient: '餘額不夠,還差一點',
+  duplicate: '剛剛已經送出了,請稍候',
+  reward_unavailable: '這個項目暫時不能兌換',
+  not_refundable: '這筆紀錄目前不能申請退款'
+};
+const STATUS_TEXT = {
+  completed: '已兌換',
+  refund_requested: '退款審核中',
+  refunded: '已退款',
+  refund_rejected: '退款未通過'
+};
+
+/* =========================================================
+   與 Supabase 溝通(只呼叫四支 RPC,不直接碰資料表)
+   ========================================================= */
+async function rpc(fn, args) {
+  const key = CONFIG.SUPABASE_ANON_KEY;
+  const headers = { 'Content-Type': 'application/json', apikey: key };
+  if (key.startsWith('eyJ')) headers.Authorization = `Bearer ${key}`; // 舊版 anon key 是 JWT;新版 publishable key 只用 apikey
+  const res = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(args) });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = new Error(data?.message || 'request_failed');
+    err.code = data?.message || 'request_failed';
+    throw err;
+  }
+  return data;
+}
+
+/* =========================================================
+   狀態
+   ========================================================= */
+const state = {
+  token: null, session: null, data: null,
+  tab: 'ledger', pin: '', busy: false,
+  error: '', lockUntil: 0, shake: false,
+  loading: false, loadError: false,
+  sheet: null
+};
+
+function init() {
+  document.title = CONFIG.BANK_NAME;
+  const m = location.hash.match(/[#&]t=([0-9a-fA-F]+)/);
+  if (m) {
+    // 每次刷卡都視為新的一次登入:存下 token、清掉舊 session、把 token 從網址列移除
+    store.set('lb_token', m[1]);
+    store.del('lb_session');
+    // 把代碼從網址列移除。用 file:// 在本機測試時瀏覽器會拒絕這個動作,失敗也不影響流程
+    if (location.protocol !== 'file:') {
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    }
+  }
+  state.token = store.get('lb_token');
+  state.session = store.get('lb_session');
+  if (state.session) loadDashboard(); else render();
+}
+
+/* =========================================================
+   畫面
+   ========================================================= */
+function render() {
+  const app = $('#app');
+  if (state.loading) app.innerHTML = viewLoading();
+  else if (state.loadError) app.innerHTML = viewRetry();
+  else if (state.session && state.data) app.innerHTML = viewHome();
+  else app.innerHTML = viewLock();
+  updateTimers();
+}
+
+function viewLoading() {
+  return `<div class="screen"><div class="cover"><p class="bank">${esc(CONFIG.BANK_NAME)}</p></div><p class="empty">讀取中…</p></div>`;
+}
+
+function viewRetry() {
+  return `<div class="screen"><div class="cover"><p class="bank">${esc(CONFIG.BANK_NAME)}</p></div>
+    <div class="empty"><p>暫時連不上,請確認網路後再試一次。</p><p style="margin-top:16px"><button class="btn" data-action="retry">重新讀取</button></p></div></div>`;
+}
+
+function viewLock() {
+  if (!state.token) {
+    return `<div class="screen">
+      <div class="cover"><p class="bank-big">${esc(CONFIG.BANK_NAME)}</p></div>
+      <div class="lock-body">
+        <svg class="waves" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M14 22c5 6 5 14 0 20"/><path d="M26 15c8 10 8 24 0 34"/><path d="M38 8c11 14 11 34 0 48"/>
+        </svg>
+        <p class="prompt">請用卡片感應手機</p>
+        <p class="msg" style="color:var(--muted)">${esc(state.error) || '把卡片貼近 iPhone 上方,出現通知後點一下。'}</p>
+        ${CONFIG.ALLOW_MANUAL_TOKEN ? `<button class="link-btn" style="margin:0 auto" data-action="ask-token">沒有卡片?輸入卡片代碼</button>` : ''}
+      </div></div>`;
+  }
+  const locked = state.lockUntil > Date.now();
+  const left = Math.ceil((state.lockUntil - Date.now()) / 1000);
+  const dots = [0, 1, 2, 3].map((i) => `<span class="dot ${i < state.pin.length ? 'on' : ''}"></span>`).join('');
+  const dis = state.busy || locked ? 'disabled' : '';
+  const num = (k) => `<button class="key" data-action="key" data-v="${k}" ${dis}>${k}</button>`;
+  const back = `<button class="key aux" data-action="back" aria-label="刪除一碼" ${dis}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M16 9.5l-5 5M11 9.5l5 5"/></svg></button>`;
+  return `<div class="screen">
+    <div class="cover"><p class="bank-big">${esc(CONFIG.BANK_NAME)}</p></div>
+    <div class="lock-body">
+      <p class="prompt">請輸入 4 位數 PIN</p>
+      <div class="dots ${state.shake ? 'shake' : ''}" aria-label="已輸入 ${state.pin.length} 碼">${dots}</div>
+      <p class="msg" id="msg">${esc(locked ? lockText(left) : state.error)}</p>
+      <div class="pad">
+        ${['1','2','3','4','5','6','7','8','9'].map(num).join('')}
+        <span></span>${num('0')}${back}
+      </div>
+    </div></div>`;
+}
+
+function withRunning(ledger, balance) {
+  let run = Number(balance);
+  return ledger.map((r) => { const out = { ...r, after: run }; run -= r.amount; return out; });
+}
+
+function viewHome() {
+  const d = state.data;
+  let body = '';
+
+  if (state.tab === 'ledger') {
+    const rows = withRunning(d.ledger, d.balance);
+    body = rows.length
+      ? rows.map((r) => `<div class="row">
+          <span class="date">${fmtDate(r.created_at)}</span>
+          <span class="note">${esc(r.note || '入帳')}</span>
+          <span class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${fmt(Math.abs(r.amount))}<span class="after">結餘 ${fmt(r.after)}</span></span>
+        </div>`).join('')
+      : `<p class="empty">還沒有任何紀錄。有新的入帳時,會出現在這裡。</p>`;
+  }
+
+  if (state.tab === 'shop') {
+    body = d.rewards.length
+      ? d.rewards.map((r) => {
+          const short = d.balance < r.cost;
+          return `<div class="item">
+            <span class="emoji" aria-hidden="true">${esc(r.emoji || '🎁')}</span>
+            <div><h3>${esc(r.title)}</h3>${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}
+              <p class="cost">${fmt(r.cost)} ${esc(CONFIG.UNIT)}</p></div>
+            <button class="btn" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? `還差 ${fmt(r.cost - d.balance)}` : '兌換'}</button>
+          </div>`;
+        }).join('')
+      : `<p class="empty">商店暫時沒有商品。</p>`;
+  }
+
+  if (state.tab === 'history') {
+    body = d.redemptions.length
+      ? d.redemptions.map((r) => `<div class="rec">
+          <div class="rec-head"><span class="rec-title">${esc(r.reward_title)}</span><span class="rec-cost">${fmt(r.cost)} ${esc(CONFIG.UNIT)}</span></div>
+          <div class="rec-meta"><span>${fmtDate(r.created_at)}</span><span class="chip ${r.status === 'refund_requested' ? 'pending' : ''}">${STATUS_TEXT[r.status] || esc(r.status)}</span></div>
+          ${r.status === 'completed' ? `<button class="link-btn" data-action="ask-refund" data-id="${esc(r.id)}">申請退款</button>` : ''}
+        </div>`).join('')
+      : `<p class="empty">還沒有兌換過任何項目。到「商店」看看吧。</p>`;
+  }
+
+  const tab = (id, label) => `<button class="tab" role="tab" aria-selected="${state.tab === id}" data-action="tab" data-v="${id}">${label}</button>`;
+  return `<div class="screen">
+    <header class="cover">
+      <div class="cover-top"><p class="bank">${esc(CONFIG.BANK_NAME)}</p><button class="lock-btn" data-action="lock">上鎖</button></div>
+      <p class="holder">${esc(d.display_name)}</p>
+      <p class="bal-label">目前餘額</p>
+      <p class="bal"><span class="num">${fmt(d.balance)}</span><span class="unit">${esc(CONFIG.UNIT)}</span></p>
+    </header>
+    <section class="page" role="tabpanel">${body}</section>
+    <nav class="tabbar" role="tablist" aria-label="主選單">${tab('ledger', '明細')}${tab('shop', '商店')}${tab('history', '紀錄')}</nav>
+  </div>`;
+}
+
+/* ---------- 彈出視窗 ---------- */
+function renderSheet() {
+  const root = $('#sheet-root');
+  const s = state.sheet;
+  if (!s) { root.innerHTML = ''; return; }
+  const dis = state.busy ? 'disabled' : '';
+  if (s.type === 'redeem') {
+    const after = state.data.balance - s.reward.cost;
+    root.innerHTML = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>
+      <h2 id="sh-t">兌換「${esc(s.reward.title)}」?</h2>
+      <p>會花掉 ${fmt(s.reward.cost)} ${esc(CONFIG.UNIT)},剩下 ${fmt(after)} ${esc(CONFIG.UNIT)}。兌換後${esc(CONFIG.PARTNER)}會馬上收到通知。</p>
+      <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-redeem" ${dis}>${state.busy ? '處理中…' : '確定兌換'}</button></div>
+    </div></div>`;
+  } else if (s.type === 'refund') {
+    root.innerHTML = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>
+      <h2 id="sh-t">申請退款「${esc(s.redemption.reward_title)}」</h2>
+      <p>送出後要等${esc(CONFIG.PARTNER)}審核,通過後 ${fmt(s.redemption.cost)} ${esc(CONFIG.UNIT)} 會回到餘額。</p>
+      <textarea id="refund-reason" rows="3" maxlength="200" placeholder="想說的話(選填)" aria-label="退款理由,選填"></textarea>
+      <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-refund" ${dis}>${state.busy ? '送出中…' : '送出申請'}</button></div>
+    </div></div>`;
+  } else if (s.type === 'token') {
+    root.innerHTML = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>
+      <h2 id="sh-t">輸入卡片代碼</h2>
+      <p>測試用。貼上卡片網址裡 t= 後面的那一串,或整個網址都可以。</p>
+      <input id="token-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="卡片代碼">
+      <p class="msg" id="token-msg" style="padding:0;text-align:left" role="alert"></p>
+      <div class="actions"><button class="btn ghost" data-action="close-sheet">取消</button><button class="btn" data-action="confirm-token">確定</button></div>
+    </div></div>`;
+  }
+  const sheet = root.querySelector('.sheet');
+  if (sheet) sheet.focus();
+}
+
+function showSeal(title, balance) {
+  const root = $('#seal-root');
+  root.innerHTML = `<div class="seal-wrap" data-action="close-seal" role="alertdialog" aria-label="兌換完成">
+    <div class="seal">已兌換</div>
+    <div><p class="seal-title">${esc(title)}</p><p class="seal-bal">剩餘 ${fmt(balance)} ${esc(CONFIG.UNIT)}</p></div></div>`;
+  clearTimeout(showSeal.t);
+  showSeal.t = setTimeout(() => { root.innerHTML = ''; }, 2600);
+}
+
+function toast(text) {
+  const root = $('#toast-root');
+  root.innerHTML = `<div class="toast">${esc(text)}</div>`;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { root.innerHTML = ''; }, 3200);
+}
+
+/* =========================================================
+   動作
+   ========================================================= */
+function lockText(s) {
+  return `輸錯太多次,已暫時鎖定。${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 後可以再試`;
+}
+
+let lockTimer = null;
+function updateTimers() {
+  clearInterval(lockTimer);
+  if (state.lockUntil > Date.now() && !state.session) {
+    lockTimer = setInterval(() => {
+      const left = Math.ceil((state.lockUntil - Date.now()) / 1000);
+      if (left <= 0) { clearInterval(lockTimer); state.lockUntil = 0; state.error = ''; render(); return; }
+      const el = document.getElementById('msg');
+      if (el) el.textContent = lockText(left);
+    }, 1000);
+  }
+}
+
+function lockNow(message) {
+  state.session = null; state.data = null; state.pin = ''; state.sheet = null;
+  state.error = message || '';
+  store.del('lb_session');
+  renderSheet();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function pressKey(v) {
+  if (state.busy || state.lockUntil > Date.now() || state.pin.length >= 4) return;
+  state.pin += v;
+  state.error = ''; state.shake = false;
+  render();
+  if (state.pin.length === 4) submitPin();
+}
+
+async function submitPin() {
+  state.busy = true; render();
+  try {
+    const r = await rpc('unlock', { p_token: state.token, p_pin: state.pin });
+    state.pin = '';
+    if (r.ok) {
+      state.session = r.session;
+      store.set('lb_session', r.session);
+      state.busy = false;
+      await loadDashboard();
+      return;
+    }
+    if (r.error === 'locked') {
+      state.lockUntil = Date.now() + (r.retry_after_seconds || 900) * 1000;
+      state.error = '';
+    } else if (r.error === 'wrong_pin') {
+      state.error = `PIN 不對,還可以再試 ${r.attempts_left} 次`;
+      state.shake = true;
+    } else {
+      state.error = '這張卡片已經失效了';
+      store.del('lb_token'); state.token = null;
+    }
+  } catch {
+    state.pin = '';
+    state.error = '連線失敗,請再試一次';
+  }
+  state.busy = false;
+  render();
+}
+
+async function loadDashboard(silent) {
+  if (!silent) { state.loading = true; state.loadError = false; render(); }
+  try {
+    state.data = await rpc('get_dashboard', { p_session: state.session });
+    state.loading = false; state.loadError = false;
+    render();
+  } catch (e) {
+    state.loading = false;
+    if (e.code === 'session_expired') { lockNow('登入已過期,請重新輸入 PIN'); return; }
+    if (silent) { toast('更新失敗,請稍後再試'); return; }
+    state.loadError = true; render();
+  }
+}
+
+async function doRedeem() {
+  if (state.busy || !state.sheet) return;
+  const reward = state.sheet.reward;
+  state.busy = true; renderSheet();
+  try {
+    const r = await rpc('redeem', { p_session: state.session, p_reward_id: reward.id });
+    state.busy = false; state.sheet = null; renderSheet();
+    if (r.ok) showSeal(reward.title, r.balance); else toast(ERR_TEXT[r.error] || '兌換失敗,請再試一次');
+    await loadDashboard(true);
+  } catch (e) {
+    state.busy = false; state.sheet = null; renderSheet();
+    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
+  }
+}
+
+async function doRefund() {
+  if (state.busy || !state.sheet) return;
+  const red = state.sheet.redemption;
+  const reason = (document.getElementById('refund-reason')?.value || '').trim();
+  state.busy = true; renderSheet();
+  try {
+    const r = await rpc('request_refund', { p_session: state.session, p_redemption_id: red.id, p_reason: reason || null });
+    state.busy = false; state.sheet = null; renderSheet();
+    toast(r.ok ? `已送出退款申請,等待${CONFIG.PARTNER}審核` : (ERR_TEXT[r.error] || '送出失敗,請再試一次'));
+    await loadDashboard(true);
+  } catch (e) {
+    state.busy = false; state.sheet = null; renderSheet();
+    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
+  }
+}
+
+/* =========================================================
+   事件
+   ========================================================= */
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  // 點在彈出視窗內容上不要關閉(只有點背景才關)
+  if (el.dataset.action === 'close-sheet' && el.classList.contains('backdrop') && e.target.closest('[data-stop]')) return;
+
+  switch (el.dataset.action) {
+    case 'key': pressKey(el.dataset.v); break;
+    case 'back': if (!state.busy && state.pin) { state.pin = state.pin.slice(0, -1); state.error = ''; render(); } break;
+    case 'tab': state.tab = el.dataset.v; render(); window.scrollTo(0, 0); break;
+    case 'lock': lockNow(); break;
+    case 'retry': loadDashboard(); break;
+    case 'ask-redeem': {
+      const reward = state.data.rewards.find((r) => r.id === el.dataset.id);
+      if (reward) { state.sheet = { type: 'redeem', reward }; renderSheet(); }
+      break;
+    }
+    case 'ask-refund': {
+      const redemption = state.data.redemptions.find((r) => r.id === el.dataset.id);
+      if (redemption) { state.sheet = { type: 'refund', redemption }; renderSheet(); }
+      break;
+    }
+    case 'confirm-redeem': doRedeem(); break;
+    case 'confirm-refund': doRefund(); break;
+    case 'ask-token':
+      if (CONFIG.ALLOW_MANUAL_TOKEN) { state.sheet = { type: 'token' }; renderSheet(); }
+      break;
+    case 'confirm-token': {
+      if (!CONFIG.ALLOW_MANUAL_TOKEN) break;
+      const v = (document.getElementById('token-input')?.value || '').trim().replace(/^.*t=/, '');
+      if (!/^[0-9a-fA-F]{16,}$/.test(v)) {
+        document.getElementById('token-msg').textContent = '代碼格式不對,請貼上完整那串英數字';
+        break;
+      }
+      store.set('lb_token', v);
+      state.token = v; state.error = ''; state.sheet = null;
+      renderSheet(); render();
+      break;
+    }
+    case 'close-sheet': if (!state.busy) { state.sheet = null; renderSheet(); } break;
+    case 'close-seal': $('#seal-root').innerHTML = ''; break;
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.sheet && !state.busy) { state.sheet = null; renderSheet(); }
+});
+
+// 離開頁面太久,回來要重新輸入 PIN
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (state.session && hiddenAt && Date.now() - hiddenAt > CONFIG.AUTO_LOCK_MINUTES * 60000) {
+    lockNow('已自動上鎖,請重新輸入 PIN');
+  }
+});
+
+init();
+</script>
+</body>
+</html>
