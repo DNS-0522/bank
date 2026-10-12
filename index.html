@@ -102,6 +102,19 @@
   .q-label { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; overflow-wrap: anywhere; }
   .q.dim .q-circle, .q.dim .q-label { opacity: .5; }
 
+  /* ---------- 雙餘額 ---------- */
+  .bal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .pill-sm { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--rose); font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .pill-sm:active { background: #26211F; }
+  .bal-cols { display: grid; grid-template-columns: 1.3fr 1fr; margin-top: 14px; }
+  .bcol { min-width: 0; }
+  .bcol + .bcol { padding-left: 18px; border-left: 1px solid var(--line); }
+  .bname { font-size: 13px; color: var(--muted); }
+  .bcol .n { font-size: 30px; }
+  .pend { margin-top: 4px; font-size: 12px; color: var(--rose); }
+  .cur-tag { margin-left: 8px; padding: 0 6px; border: 1px solid var(--line); border-radius: 5px; font-size: 11px; color: var(--dim); }
+  .hint { margin: 10px 22px 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+
   /* ---------- 明細 ---------- */
   .rrow { display: grid; grid-template-columns: 1fr auto; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); align-items: start; }
   .rrow:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -238,7 +251,9 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_wMWqy16fq-QEfeEtUNz9gA_cc1SFP-5',
   BANK_NAME: '愛情銀行',
   DISPLAY_NAME: 'Daisy',                     // 首頁問候顯示的名字。留空 '' 就改用資料庫裡的名字
-  UNIT: '愛心',                              // 貨幣單位
+  UNIT: '愛心',                              // 愛心的單位(用在愛心兌換商店)
+  WALLET_NAME: '零錢包',                      // 第二種餘額的名稱
+  WALLET_PREFIX: 'NT$',                      // 零錢包金額前面的符號
   PARTNER: '他',                             // 通知文案裡怎麼稱呼你,例如「他」或你的暱稱
   SUBTITLE: '歡迎回來,這裡是專屬於妳的愛情銀行', // 首頁問候下方的小字
   AUTO_LOCK_MINUTES: 5,                      // 離開頁面超過這麼久,回來要重新輸入 PIN
@@ -252,6 +267,10 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nameOf = (d) => CONFIG.DISPLAY_NAME || d.display_name;
 const fmt = (n) => Number(n).toLocaleString('en-US');
+// 兩種餘額:heart(愛心,兌換商品,立刻扣款)與 wallet(零錢包,購買商品,由你確認後扣款)
+const money = (cur, n) => (cur === 'wallet' ? `${CONFIG.WALLET_PREFIX} ${fmt(n)}` : `${fmt(n)} ${CONFIG.UNIT}`);
+const bals = (d) => d.balances || { heart: d.balance || 0, wallet: 0 };
+const availOf = (d, cur) => (cur === 'wallet' ? bals(d).wallet - (d.wallet_pending || 0) : bals(d).heart);
 const fmtDate = (iso) => {
   const d = new Date(iso);
   return `${String(d.getFullYear()).slice(2)}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -283,7 +302,8 @@ const ERR_TEXT = {
   reward_unavailable: '這個項目暫時不能兌換',
   not_refundable: '這筆紀錄目前不能申請退款'
 };
-const STATUS_TEXT = { completed: '已兌換', refund_requested: '退款審核中', refunded: '已退款', refund_rejected: '退款未通過' };
+const STATUS_TEXT = { completed: '已兌換', refund_requested: '退款審核中', refunded: '已退款', refund_rejected: '退款未通過', pending: '待扣款', cancelled: '已取消' };
+const statusText = (r) => (r.status === 'completed' && r.currency === 'wallet' ? '已購買' : (STATUS_TEXT[r.status] || r.status));
 
 function greeting() {
   const h = new Date().getHours();
@@ -312,7 +332,7 @@ async function rpc(fn, args) {
    ========================================================= */
 const state = {
   token: null, session: null, data: null,
-  tab: 'home', recTab: 'ledger', hideBal: false,
+  tab: 'home', recTab: 'ledger', shopCur: 'heart', hideBal: false,
   pin: '', busy: false, error: '', lockUntil: 0, shake: false,
   loading: false, loadError: false, sheet: null
 };
@@ -322,7 +342,7 @@ function init() {
   const m = location.hash.match(/[#&]t=([0-9a-fA-F]+)/);
   if (m) {
     // 每次刷卡都視為新的一次登入:存下 token、清掉舊 session、把 token 從網址列移除
-    store.set('lb_token', m[1]);
+    store.set('lb_token', m[1].toLowerCase());
     store.del('lb_session');
     if (location.protocol !== 'file:') {
       try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -385,6 +405,7 @@ function viewLock() {
   return `<div class="screen">${head}
     <div class="lock-body">
       <p class="prompt">請輸入 4 位數 PIN</p>
+      ${CONFIG.ALLOW_MANUAL_TOKEN ? `<p class="msg soft" style="min-height:0">測試用:讀到的代碼 ${esc(state.token.slice(0, 4))}…${esc(state.token.slice(-4))}(${state.token.length} 字元)</p>` : ''}
       <div class="dots ${state.shake ? 'shake' : ''}" aria-label="已輸入 ${state.pin.length} 碼">${dots}</div>
       <p class="msg" id="msg">${esc(locked ? lockText(left) : state.error)}</p>
       <div class="pad">${['1','2','3','4','5','6','7','8','9'].map(num).join('')}<span></span>${num('0')}${back}</div>
@@ -392,9 +413,14 @@ function viewLock() {
 }
 
 /* ---------- 已登入 ---------- */
-function withRunning(ledger, balance) {
-  let run = Number(balance);
-  return ledger.map((r) => { const out = { ...r, after: run }; run -= r.amount; return out; });
+function withRunning(ledger, d) {
+  const run = { heart: Number(bals(d).heart), wallet: Number(bals(d).wallet) };
+  return ledger.map((r) => {
+    const c = r.currency || 'heart';
+    const out = { ...r, currency: c, after: run[c] };
+    run[c] -= r.amount;
+    return out;
+  });
 }
 
 function topbar(title) {
@@ -406,75 +432,105 @@ function topbar(title) {
 }
 
 function ledgerRow(r, showAfter) {
+  const cur = r.currency || 'heart';
+  const amt = cur === 'wallet' ? `${CONFIG.WALLET_PREFIX} ${fmt(Math.abs(r.amount))}` : `${fmt(Math.abs(r.amount))} ${CONFIG.UNIT}`;
   return `<div class="rrow">
-    <div><p class="note">${esc(r.note || '入帳')}</p><p class="date">${fmtDate(r.created_at)}</p></div>
-    <p class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${fmt(Math.abs(r.amount))}${showAfter ? `<span class="after">結餘 ${fmt(r.after)}</span>` : ''}</p>
+    <div><p class="note">${esc(r.note || '入帳')}</p><p class="date">${fmtDate(r.created_at)}<span class="cur-tag">${esc(cur === 'wallet' ? CONFIG.WALLET_NAME : CONFIG.UNIT)}</span></p></div>
+    <p class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${amt}${showAfter ? `<span class="after">結餘 ${money(cur, r.after)}</span>` : ''}</p>
   </div>`;
 }
 
 function tabHome(d) {
-  const bal = state.hideBal ? '••••' : fmt(d.balance);
-  const quick = d.rewards.slice(0, 5).map((r) => `<button class="q ${d.balance < r.cost ? 'dim' : ''}" data-action="ask-redeem" data-id="${esc(r.id)}">
+  const b = bals(d);
+  const wal = state.hideBal ? '••••' : fmt(b.wallet);
+  const hea = state.hideBal ? '••••' : fmt(b.heart);
+  const pick = (cur) => d.rewards.filter((r) => (r.currency || 'heart') === cur).slice(0, 5);
+  const quick = (title, cur) => {
+    const list = pick(cur);
+    if (!list.length) return '';
+    const items = list.map((r) => `<button class="q ${availOf(d, cur) < r.cost ? 'dim' : ''}" data-action="ask-redeem" data-id="${esc(r.id)}">
       <span class="q-circle"><span class="q-emoji">${esc(r.emoji || '🎁')}</span></span><span class="q-label">${esc(r.title)}</span></button>`).join('');
-  const recent = withRunning(d.ledger, d.balance).slice(0, 3);
+    return `<section class="panel"><div class="sec-head"><h2>${title}</h2><button class="text-link" data-action="shop-cur" data-v="${cur}">全部</button></div><div class="quick-row">${items}</div></section>`;
+  };
+  const recent = withRunning(d.ledger, d).slice(0, 3);
   return `${topbar('')}
     <section class="hello">
       <p class="gm">${greeting()}</p>
       <h1 class="hi">Hi, ${esc(nameOf(d))}</h1>
       <p class="sub">${esc(CONFIG.SUBTITLE)}</p>
     </section>
-    <div class="card-wrap">${cardHtml(d.display_name)}</div>
-    <section class="panel balance">
-      <div>
+    <div class="card-wrap">${cardHtml()}</div>
+    <section class="panel">
+      <div class="bal-head">
         <p class="label">可用餘額<button class="eye" data-action="toggle-bal" aria-label="${state.hideBal ? '顯示餘額' : '隱藏餘額'}">${icon(state.hideBal ? 'eyeoff' : 'eye', 20)}</button></p>
-        <p class="amount"><span class="prefix">${esc(CONFIG.UNIT)}</span><span class="n">${bal}</span></p>
+        <button class="pill-sm" data-action="tab" data-v="shop">${icon('gift', 18)}<span>前往商店</span></button>
       </div>
-      <button class="shop-btn" data-action="tab" data-v="shop">${icon('gift', 24)}<span>前往兌換</span></button>
+      <div class="bal-cols">
+        <div class="bcol"><p class="bname">${esc(CONFIG.WALLET_NAME)}</p>
+          <p class="amount"><span class="prefix">${esc(CONFIG.WALLET_PREFIX)}</span><span class="n">${wal}</span></p>
+          ${d.wallet_pending > 0 ? `<p class="pend">待扣款 ${esc(CONFIG.WALLET_PREFIX)} ${fmt(d.wallet_pending)}</p>` : ''}</div>
+        <div class="bcol"><p class="bname">${esc(CONFIG.UNIT)}</p>
+          <p class="amount"><span class="n">${hea}</span></p></div>
+      </div>
     </section>
-    ${quick ? `<section class="panel"><div class="sec-head"><h2>經常兌換</h2><button class="text-link" data-action="tab" data-v="shop">全部</button></div><div class="quick-row">${quick}</div></section>` : ''}
+    ${quick(esc(CONFIG.UNIT) + '兌換', 'heart')}
+    ${quick(esc(CONFIG.WALLET_NAME) + '購買', 'wallet')}
     <section class="panel"><div class="sec-head"><h2>最近明細</h2><button class="text-link" data-action="tab" data-v="records">查看全部</button></div>
       ${recent.length ? recent.map((r) => ledgerRow(r, false)).join('') : `<p class="empty" style="padding:8px 0">還沒有任何紀錄。有新的入帳時,會出現在這裡。</p>`}
     </section>`;
 }
 
 function tabShop(d) {
-  const items = d.rewards.length
-    ? d.rewards.map((r) => {
-        const short = d.balance < r.cost;
+  const cur = state.shopCur;
+  const seg = `<div class="seg" role="tablist">
+    <button role="tab" aria-selected="${cur === 'heart'}" data-action="shop-cur" data-v="heart">${esc(CONFIG.UNIT)}兌換</button>
+    <button role="tab" aria-selected="${cur === 'wallet'}" data-action="shop-cur" data-v="wallet">${esc(CONFIG.WALLET_NAME)}購買</button></div>`;
+  const avail = availOf(d, cur);
+  const list = d.rewards.filter((r) => (r.currency || 'heart') === cur);
+  const items = list.length
+    ? list.map((r) => {
+        const short = avail < r.cost;
         return `<div class="item">
           <span class="q-circle sm"><span class="q-emoji">${esc(r.emoji || '🎁')}</span></span>
-          <div><h3>${esc(r.title)}</h3>${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}<p class="cost">${esc(CONFIG.UNIT)} ${fmt(r.cost)}</p></div>
-          <button class="pill" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? `還差 ${fmt(r.cost - d.balance)}` : '兌換'}</button>
+          <div><h3>${esc(r.title)}</h3>${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}<p class="cost">${money(cur, r.cost)}</p></div>
+          <button class="pill" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? `還差 ${fmt(r.cost - avail)}` : (cur === 'wallet' ? '購買' : '兌換')}</button>
         </div>`;
       }).join('')
-    : `<p class="empty">商店暫時沒有商品。</p>`;
-  return `${topbar('兌換')}<div class="list">${items}</div>`;
+    : `<p class="empty">這個商店暫時沒有商品。</p>`;
+  const hint = cur === 'wallet'
+    ? `<p class="hint">零錢包可用 ${money('wallet', avail)}。送出購買後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成。</p>`
+    : `<p class="hint">愛心可用 ${money('heart', avail)}。兌換後會立刻扣款。</p>`;
+  return `${topbar('商店')}${seg}${hint}<div class="list">${items}</div>`;
 }
 
 function tabRecords(d) {
   const seg = `<div class="seg" role="tablist">
     <button role="tab" aria-selected="${state.recTab === 'ledger'}" data-action="rec-tab" data-v="ledger">餘額明細</button>
-    <button role="tab" aria-selected="${state.recTab === 'redeem'}" data-action="rec-tab" data-v="redeem">兌換紀錄</button></div>`;
+    <button role="tab" aria-selected="${state.recTab === 'redeem'}" data-action="rec-tab" data-v="redeem">兌換與購買</button></div>`;
   let body;
   if (state.recTab === 'ledger') {
-    const rows = withRunning(d.ledger, d.balance);
+    const rows = withRunning(d.ledger, d);
     body = rows.length ? `<div class="list">${rows.map((r) => ledgerRow(r, true)).join('')}</div>`
       : `<p class="empty">還沒有任何紀錄。有新的入帳時,會出現在這裡。</p>`;
   } else {
     body = d.redemptions.length
-      ? `<div class="list">${d.redemptions.map((r) => `<div class="rec">
-          <div class="rec-head"><span class="rec-title">${esc(r.reward_title)}</span><span class="rec-cost">${esc(CONFIG.UNIT)} ${fmt(r.cost)}</span></div>
-          <div class="rec-meta"><span>${fmtDate(r.created_at)}</span><span class="chip ${r.status === 'refund_requested' ? 'pending' : ''}">${STATUS_TEXT[r.status] || esc(r.status)}</span></div>
-          ${r.status === 'completed' ? `<button class="link-btn" data-action="ask-refund" data-id="${esc(r.id)}">申請退款</button>` : ''}
-        </div>`).join('')}</div>`
-      : `<p class="empty">還沒有兌換過任何項目。到「兌換」看看吧。</p>`;
+      ? `<div class="list">${d.redemptions.map((r) => {
+          const cur = r.currency || 'heart';
+          const waiting = r.status === 'refund_requested' || r.status === 'pending';
+          return `<div class="rec">
+          <div class="rec-head"><span class="rec-title">${esc(r.reward_title)}</span><span class="rec-cost">${money(cur, r.cost)}</span></div>
+          <div class="rec-meta"><span>${fmtDate(r.created_at)}</span><span class="chip ${waiting ? 'pending' : ''}">${esc(statusText({ ...r, currency: cur }))}</span></div>
+          ${r.status === 'completed' && cur === 'heart' ? `<button class="link-btn" data-action="ask-refund" data-id="${esc(r.id)}">申請退款</button>` : ''}
+        </div>`;
+        }).join('')}</div>`
+      : `<p class="empty">還沒有兌換或購買過任何項目。到「商店」看看吧。</p>`;
   }
   return `${topbar('紀錄')}${seg}${body}`;
 }
 
 function tabCard(d) {
   return `${topbar('卡片')}
-    <div class="card-wrap">${cardHtml(d.display_name)}</div>
+    <div class="card-wrap">${cardHtml()}</div>
     <dl class="info">
       <div><dt>持卡人</dt><dd>${esc(nameOf(d))}</dd></div>
       <div><dt>帳戶</dt><dd>${esc(CONFIG.BANK_NAME)}</dd></div>
@@ -488,7 +544,7 @@ function viewHome() {
   const body = state.tab === 'shop' ? tabShop(d) : state.tab === 'records' ? tabRecords(d) : state.tab === 'card' ? tabCard(d) : tabHome(d);
   const tab = (id, label, ic) => `<button class="tab" role="tab" aria-selected="${state.tab === id}" data-action="tab" data-v="${id}">${icon(ic, 24)}<span>${label}</span></button>`;
   return `<div class="screen"><div class="page">${body}</div>
-    <nav class="tabbar" role="tablist" aria-label="主選單">${tab('home', '首頁', 'home')}${tab('shop', '兌換', 'gift')}${tab('records', '紀錄', 'list')}${tab('card', '卡片', 'card')}</nav></div>`;
+    <nav class="tabbar" role="tablist" aria-label="主選單">${tab('home', '首頁', 'home')}${tab('shop', '商店', 'gift')}${tab('records', '紀錄', 'list')}${tab('card', '卡片', 'card')}</nav></div>`;
 }
 
 /* ---------- 彈出視窗 ---------- */
@@ -499,11 +555,18 @@ function renderSheet() {
   const dis = state.busy ? 'disabled' : '';
   const open = `<div class="backdrop" data-action="close-sheet"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" tabindex="-1" data-stop>`;
   if (s.type === 'redeem') {
-    const after = state.data.balance - s.reward.cost;
+    const after = availOf(state.data, 'heart') - s.reward.cost;
     root.innerHTML = `${open}
       <h2 id="sh-t">兌換「${esc(s.reward.title)}」?</h2>
       <p>會花掉 ${fmt(s.reward.cost)} ${esc(CONFIG.UNIT)},剩下 ${fmt(after)} ${esc(CONFIG.UNIT)}。兌換後${esc(CONFIG.PARTNER)}會馬上收到通知。</p>
       <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-redeem" ${dis}>${state.busy ? '處理中…' : '確定兌換'}</button></div>
+    </div></div>`;
+  } else if (s.type === 'purchase') {
+    const after = availOf(state.data, 'wallet') - s.reward.cost;
+    root.innerHTML = `${open}
+      <h2 id="sh-t">購買「${esc(s.reward.title)}」?</h2>
+      <p>價格 ${money('wallet', s.reward.cost)}。送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成,這時零錢包還不會變少。送出後可用額度剩 ${money('wallet', after)}。</p>
+      <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-purchase" ${dis}>${state.busy ? '送出中…' : '送出購買'}</button></div>
     </div></div>`;
   } else if (s.type === 'refund') {
     root.innerHTML = `${open}
@@ -525,11 +588,11 @@ function renderSheet() {
   if (sheet) sheet.focus();
 }
 
-function showSeal(title, balance) {
+function showSeal(label, title, sub) {
   const root = $('#seal-root');
-  root.innerHTML = `<div class="seal-wrap" data-action="close-seal" role="alertdialog" aria-label="兌換完成">
-    <div class="seal">已兌換</div>
-    <div><p class="seal-title">${esc(title)}</p><p class="seal-bal">剩餘 ${fmt(balance)} ${esc(CONFIG.UNIT)}</p></div></div>`;
+  root.innerHTML = `<div class="seal-wrap" data-action="close-seal" role="alertdialog" aria-label="${esc(label)}">
+    <div class="seal">${esc(label)}</div>
+    <div><p class="seal-title">${esc(title)}</p><p class="seal-bal">${esc(sub)}</p></div></div>`;
   clearTimeout(showSeal.t);
   showSeal.t = setTimeout(() => { root.innerHTML = ''; }, 2600);
 }
@@ -613,118 +676,10 @@ async function submitPin() {
 async function loadDashboard(silent) {
   if (!silent) { state.loading = true; state.loadError = false; render(); }
   try {
-    state.data = await rpc('get_dashboard', { p_session: state.session });
+    const dd = await rpc('get_dashboard', { p_session: state.session });
+    dd.balances = dd.balances || { heart: dd.balance || 0, wallet: 0 };
+    dd.wallet_pending = dd.wallet_pending || 0;
+    state.data = dd;
     state.loading = false; state.loadError = false;
     render();
     return true;
-  } catch (e) {
-    state.loading = false;
-    if (e.code === 'session_expired') { lockNow('登入已過期,請重新輸入 PIN'); return false; }
-    if (silent) { toast('更新失敗,請稍後再試'); return false; }
-    state.loadError = true; render();
-    return false;
-  }
-}
-
-async function doRedeem() {
-  if (state.busy || !state.sheet) return;
-  const reward = state.sheet.reward;
-  state.busy = true; renderSheet();
-  try {
-    const r = await rpc('redeem', { p_session: state.session, p_reward_id: reward.id });
-    state.busy = false; state.sheet = null; renderSheet();
-    if (r.ok) showSeal(reward.title, r.balance); else toast(ERR_TEXT[r.error] || '兌換失敗,請再試一次');
-    await loadDashboard(true);
-  } catch (e) {
-    state.busy = false; state.sheet = null; renderSheet();
-    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
-  }
-}
-
-async function doRefund() {
-  if (state.busy || !state.sheet) return;
-  const red = state.sheet.redemption;
-  const reason = (document.getElementById('refund-reason')?.value || '').trim();
-  state.busy = true; renderSheet();
-  try {
-    const r = await rpc('request_refund', { p_session: state.session, p_redemption_id: red.id, p_reason: reason || null });
-    state.busy = false; state.sheet = null; renderSheet();
-    toast(r.ok ? `已送出退款申請,等待${CONFIG.PARTNER}審核` : (ERR_TEXT[r.error] || '送出失敗,請再試一次'));
-    await loadDashboard(true);
-  } catch (e) {
-    state.busy = false; state.sheet = null; renderSheet();
-    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
-  }
-}
-
-/* =========================================================
-   事件
-   ========================================================= */
-document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-action]');
-  if (!el) return;
-  // 點在彈出視窗內容上不要關閉(只有點背景才關)
-  if (el.dataset.action === 'close-sheet' && el.classList.contains('backdrop') && e.target.closest('[data-stop]')) return;
-
-  switch (el.dataset.action) {
-    case 'key': pressKey(el.dataset.v); break;
-    case 'back': if (!state.busy && state.pin) { state.pin = state.pin.slice(0, -1); state.error = ''; render(); } break;
-    case 'tab': state.tab = el.dataset.v; render(); window.scrollTo(0, 0); break;
-    case 'rec-tab': state.recTab = el.dataset.v; render(); break;
-    case 'toggle-bal': state.hideBal = !state.hideBal; render(); break;
-    case 'refresh': loadDashboard(true).then((ok) => { if (ok) toast('已更新'); }); break;
-    case 'lock': lockNow(); break;
-    case 'retry': loadDashboard(); break;
-    case 'ask-redeem': {
-      const reward = state.data.rewards.find((r) => r.id === el.dataset.id);
-      if (!reward) break;
-      if (state.data.balance < reward.cost) { toast(`還差 ${fmt(reward.cost - state.data.balance)} ${CONFIG.UNIT}`); break; }
-      state.sheet = { type: 'redeem', reward }; renderSheet();
-      break;
-    }
-    case 'ask-refund': {
-      const redemption = state.data.redemptions.find((r) => r.id === el.dataset.id);
-      if (redemption) { state.sheet = { type: 'refund', redemption }; renderSheet(); }
-      break;
-    }
-    case 'confirm-redeem': doRedeem(); break;
-    case 'confirm-refund': doRefund(); break;
-    case 'ask-token':
-      if (CONFIG.ALLOW_MANUAL_TOKEN) { state.sheet = { type: 'token' }; renderSheet(); }
-      break;
-    case 'confirm-token': {
-      if (!CONFIG.ALLOW_MANUAL_TOKEN) break;
-      const raw = document.getElementById('token-input')?.value || '';
-      const found = raw.match(/[0-9a-fA-F]{32,}/); // 容許前後有引號、空白、換行,或貼了整個網址
-      const v = found ? found[0] : '';
-      if (!v) {
-        document.getElementById('token-msg').textContent = '代碼格式不對,請貼上完整那串英數字';
-        break;
-      }
-      store.set('lb_token', v);
-      state.token = v; state.error = ''; state.sheet = null;
-      renderSheet(); render();
-      break;
-    }
-    case 'close-sheet': if (!state.busy) { state.sheet = null; renderSheet(); } break;
-    case 'close-seal': $('#seal-root').innerHTML = ''; break;
-  }
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && state.sheet && !state.busy) { state.sheet = null; renderSheet(); }
-});
-
-// 離開頁面太久,回來要重新輸入 PIN
-let hiddenAt = 0;
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { hiddenAt = Date.now(); return; }
-  if (state.session && hiddenAt && Date.now() - hiddenAt > CONFIG.AUTO_LOCK_MINUTES * 60000) {
-    lockNow('已自動上鎖,請重新輸入 PIN');
-  }
-});
-
-init();
-</script>
-</body>
-</html>
