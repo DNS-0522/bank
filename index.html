@@ -255,6 +255,29 @@
 <div id="toast-root" role="status" aria-live="polite"></div>
 
 <script>
+/* 開機保護:頁面出錯時,把錯誤文字顯示在畫面上,而不是一片黑。這段獨立於主程式,主程式語法錯誤時也會生效 */
+(function () {
+  function show(msg) {
+    var app = document.getElementById('app');
+    if (!app || (window.__lbBooted && app.innerHTML.replace(/\s/g, ''))) return;
+    var safe = String(msg).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+    app.innerHTML = '<div style="max-width:480px;margin:0 auto;padding:36px 22px;color:#F2ECE8;font:15px/1.7 system-ui,sans-serif">'
+      + '<p style="color:#E59A8C;font-size:18px;margin-bottom:10px">頁面載入出錯了</p>'
+      + '<p style="color:#CFC6C0">請把下面這段文字截圖或複製給我:</p>'
+      + '<pre style="white-space:pre-wrap;word-break:break-all;margin-top:12px;padding:12px;border:1px solid #2A2523;border-radius:12px;background:#161413;color:#F2ECE8;font-size:13px">' + safe + '</pre></div>';
+  }
+  window.addEventListener('error', function (e) {
+    show((e.message || 'error') + (e.filename ? '\n位置:' + String(e.filename).split('/').pop() + ' 第 ' + e.lineno + ' 行 第 ' + e.colno + ' 欄' : '') + '\n' + navigator.userAgent);
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason; show('Promise 錯誤:' + (r && (r.stack || r.message) || r) + '\n' + navigator.userAgent);
+  });
+  setTimeout(function () {
+    if (!window.__lbBooted) show('頁面程式沒有啟動。可能是瀏覽器太舊,或檔案上傳不完整(請確認檔案大小約 200 KB)。\n' + navigator.userAgent);
+  }, 5000);
+})();
+</script>
+<script>
 /* =========================================================
    設定:只需要改這一區
    ========================================================= */
@@ -353,6 +376,7 @@ const state = {
 };
 
 function init() {
+  window.__lbBooted = true;
   document.title = CONFIG.BANK_NAME;
   const m = location.hash.match(/[#&]t=([0-9a-fA-F]+)/);
   if (m) {
@@ -623,4 +647,266 @@ function renderSheet() {
       <h2 id="sh-t">輸入卡片代碼</h2>
       <p>測試用。貼上卡片網址裡 t= 後面的那一串,或整個網址都可以。</p>
       <input id="token-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="卡片代碼">
-      <p class="msg" id="to
+      <p class="msg" id="token-msg" style="padding:0;text-align:left" role="alert"></p>
+      <div class="actions"><button class="btn ghost" data-action="close-sheet">取消</button><button class="btn" data-action="confirm-token">確定</button></div>
+    </div></div>`;
+  }
+  const sheet = root.querySelector('.sheet');
+  if (sheet) sheet.focus();
+}
+
+function showSeal(label, title, sub) {
+  const root = $('#seal-root');
+  root.innerHTML = `<div class="seal-wrap" data-action="close-seal" role="alertdialog" aria-label="${esc(label)}">
+    <div class="seal">${esc(label)}</div>
+    <div><p class="seal-title">${esc(title)}</p><p class="seal-bal">${esc(sub)}</p></div></div>`;
+  clearTimeout(showSeal.t);
+  showSeal.t = setTimeout(() => { root.innerHTML = ''; }, 2600);
+}
+
+function toast(text) {
+  const root = $('#toast-root');
+  root.innerHTML = `<div class="toast">${esc(text)}</div>`;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { root.innerHTML = ''; }, 3200);
+}
+
+/* =========================================================
+   動作
+   ========================================================= */
+function lockText(s) {
+  return `輸錯太多次,已暫時鎖定。${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} 後可以再試`;
+}
+
+let lockTimer = null;
+function updateTimers() {
+  clearInterval(lockTimer);
+  if (state.lockUntil > Date.now() && !state.session) {
+    lockTimer = setInterval(() => {
+      const left = Math.ceil((state.lockUntil - Date.now()) / 1000);
+      if (left <= 0) { clearInterval(lockTimer); state.lockUntil = 0; state.error = ''; render(); return; }
+      const el = document.getElementById('msg');
+      if (el) el.textContent = lockText(left);
+    }, 1000);
+  }
+}
+
+function lockNow(message) {
+  state.session = null; state.data = null; state.pin = ''; state.sheet = null;
+  state.tab = 'home'; state.recTab = 'ledger';
+  state.error = message || '';
+  store.del('lb_session');
+  renderSheet();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function pressKey(v) {
+  if (state.busy || state.lockUntil > Date.now() || state.pin.length >= 4) return;
+  state.pin += v;
+  state.error = ''; state.shake = false;
+  render();
+  if (state.pin.length === 4) submitPin();
+}
+
+async function submitPin() {
+  state.busy = true; render();
+  try {
+    const r = await rpc('unlock', { p_token: state.token || '', p_pin: state.pin });
+    state.pin = '';
+    if (r.ok) {
+      state.session = r.session;
+      store.set('lb_session', r.session);
+      state.tab = 'home';
+      state.busy = false;
+      await loadDashboard();
+      return;
+    }
+    if (r.error === 'locked') {
+      state.lockUntil = Date.now() + (r.retry_after_seconds || 900) * 1000;
+      state.error = '';
+    } else if (r.error === 'wrong_pin') {
+      state.error = `PIN 不對,還可以再試 ${r.attempts_left} 次`;
+      state.shake = true;
+    } else {
+      state.error = CONFIG.ALLOW_PIN_ONLY ? '還沒啟用「只要 PIN」登入,請先在資料庫執行 love-bank-pin-only.sql' : '這張卡片已經失效了';
+      store.del('lb_token'); state.token = null;
+    }
+  } catch {
+    state.pin = '';
+    state.error = '連線失敗,請再試一次';
+  }
+  state.busy = false;
+  render();
+}
+
+async function loadDashboard(silent) {
+  if (!silent) { state.loading = true; state.loadError = false; render(); }
+  try {
+    const dd = await rpc('get_dashboard', { p_session: state.session });
+    dd.balances = dd.balances || { heart: dd.balance || 0, wallet: 0 };
+    dd.wallet_pending = dd.wallet_pending || 0;
+    dd.wallet_mode = dd.wallet_mode || 'instant';
+    state.data = dd;
+    state.loading = false; state.loadError = false;
+    render();
+    return true;
+  } catch (e) {
+    state.loading = false;
+    if (e.code === 'session_expired') { lockNow('登入已過期,請重新輸入 PIN'); return false; }
+    if (silent) { toast('更新失敗,請稍後再試'); return false; }
+    state.loadError = true; render();
+    return false;
+  }
+}
+
+async function doRedeem() {
+  if (state.busy || !state.sheet) return;
+  const reward = state.sheet.reward;
+  state.busy = true; renderSheet();
+  try {
+    const r = await rpc('redeem', { p_session: state.session, p_reward_id: reward.id });
+    state.busy = false; state.sheet = null; renderSheet();
+    if (r.ok) showSeal('已兌換', reward.title, `剩餘 ${fmt(r.balance)} ${CONFIG.UNIT}`); else toast(ERR_TEXT[r.error] || '兌換失敗,請再試一次');
+    await loadDashboard(true);
+  } catch (e) {
+    state.busy = false; state.sheet = null; renderSheet();
+    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
+  }
+}
+
+async function doSpend() {
+  if (state.busy || !state.sheet) return;
+  const { amount, item } = state.sheet;
+  state.busy = true; renderSheet();
+  try {
+    const r = await rpc('spend', { p_session: state.session, p_amount: amount, p_item: item || null });
+    state.busy = false; state.sheet = null; renderSheet();
+    if (r.ok && r.pending) showSeal('已送出', item || '零錢包支出', `等待${CONFIG.PARTNER}確認並扣款`);
+    else if (r.ok) showSeal('已扣款', item || '零錢包支出', `剩餘 ${money('wallet', r.balance)}`);
+    else toast(ERR_TEXT[r.error] || '送出失敗,請再試一次');
+    await loadDashboard(true);
+  } catch (e) {
+    state.busy = false; state.sheet = null; renderSheet();
+    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN');
+    else if (/Could not find the function/i.test(e.message || '')) toast('資料庫還沒更新,請先執行 love-bank-wallet-spend.sql');
+    else toast('連線失敗,請再試一次');
+  }
+}
+
+async function doPurchase() {
+  if (state.busy || !state.sheet) return;
+  const reward = state.sheet.reward;
+  state.busy = true; renderSheet();
+  try {
+    const r = await rpc('purchase', { p_session: state.session, p_reward_id: reward.id });
+    state.busy = false; state.sheet = null; renderSheet();
+    if (r.ok) showSeal('已送出', reward.title, `等待${CONFIG.PARTNER}確認並扣款`); else toast(ERR_TEXT[r.error] || '送出失敗,請再試一次');
+    await loadDashboard(true);
+  } catch (e) {
+    state.busy = false; state.sheet = null; renderSheet();
+    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
+  }
+}
+
+async function doRefund() {
+  if (state.busy || !state.sheet) return;
+  const red = state.sheet.redemption;
+  const reason = (document.getElementById('refund-reason')?.value || '').trim();
+  state.busy = true; renderSheet();
+  try {
+    const r = await rpc('request_refund', { p_session: state.session, p_redemption_id: red.id, p_reason: reason || null });
+    state.busy = false; state.sheet = null; renderSheet();
+    toast(r.ok ? `已送出退款申請,等待${CONFIG.PARTNER}審核` : (ERR_TEXT[r.error] || '送出失敗,請再試一次'));
+    await loadDashboard(true);
+  } catch (e) {
+    state.busy = false; state.sheet = null; renderSheet();
+    if (e.code === 'session_expired') lockNow('登入已過期,請重新輸入 PIN'); else toast('連線失敗,請再試一次');
+  }
+}
+
+/* =========================================================
+   事件
+   ========================================================= */
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  // 點在彈出視窗內容上不要關閉(只有點背景才關)
+  if (el.dataset.action === 'close-sheet' && el.classList.contains('backdrop') && e.target.closest('[data-stop]')) return;
+
+  switch (el.dataset.action) {
+    case 'key': pressKey(el.dataset.v); break;
+    case 'back': if (!state.busy && state.pin) { state.pin = state.pin.slice(0, -1); state.error = ''; render(); } break;
+    case 'tab': state.tab = el.dataset.v; render(); window.scrollTo(0, 0); break;
+    case 'rec-tab': state.recTab = el.dataset.v; render(); break;
+    case 'toggle-bal': state.hideBal = !state.hideBal; render(); break;
+    case 'refresh': loadDashboard(true).then((ok) => { if (ok) toast('已更新'); }); break;
+    case 'lock': lockNow(); break;
+    case 'retry': loadDashboard(); break;
+    case 'ask-redeem': {
+      const reward = state.data.rewards.find((r) => r.id === el.dataset.id);
+      if (!reward) break;
+      const cur = reward.currency || 'heart';
+      const avail = availOf(state.data, cur);
+      if (avail < reward.cost) { toast(`還差 ${money(cur, reward.cost - avail)}`); break; }
+      state.sheet = { type: cur === 'wallet' ? 'purchase' : 'redeem', reward }; renderSheet();
+      break;
+    }
+    case 'ask-refund': {
+      const redemption = state.data.redemptions.find((r) => r.id === el.dataset.id);
+      if (redemption) { state.sheet = { type: 'refund', redemption }; renderSheet(); }
+      break;
+    }
+    case 'confirm-redeem': doRedeem(); break;
+    case 'confirm-purchase': doPurchase(); break;
+    case 'ask-spend': {
+      const amount = parseInt((document.getElementById('spend-amount')?.value || '').replace(/[^0-9]/g, ''), 10);
+      const item = (document.getElementById('spend-item')?.value || '').trim();
+      if (!amount || amount <= 0) { toast(ERR_TEXT.invalid_amount); break; }
+      const avail = availOf(state.data, 'wallet');
+      if (amount > avail) { toast(`超過可用額度,還差 ${money('wallet', amount - avail)}`); break; }
+      state.sheet = { type: 'spend', amount, item }; renderSheet();
+      break;
+    }
+    case 'confirm-spend': doSpend(); break;
+    case 'shop-cur': state.shopCur = el.dataset.v; state.tab = 'shop'; render(); window.scrollTo(0, 0); break;
+    case 'confirm-refund': doRefund(); break;
+    case 'ask-token':
+      if (CONFIG.ALLOW_MANUAL_TOKEN) { state.sheet = { type: 'token' }; renderSheet(); }
+      break;
+    case 'confirm-token': {
+      if (!CONFIG.ALLOW_MANUAL_TOKEN) break;
+      const raw = document.getElementById('token-input')?.value || '';
+      const found = raw.match(/[0-9a-fA-F]{32,}/); // 容許前後有引號、空白、換行,或貼了整個網址
+      const v = found ? found[0].toLowerCase() : '';
+      if (!v) {
+        document.getElementById('token-msg').textContent = '代碼格式不對,請貼上完整那串英數字';
+        break;
+      }
+      store.set('lb_token', v);
+      state.token = v; state.error = ''; state.sheet = null;
+      renderSheet(); render();
+      break;
+    }
+    case 'close-sheet': if (!state.busy) { state.sheet = null; renderSheet(); } break;
+    case 'close-seal': $('#seal-root').innerHTML = ''; break;
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.sheet && !state.busy) { state.sheet = null; renderSheet(); }
+});
+
+// 離開頁面太久,回來要重新輸入 PIN
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (state.session && hiddenAt && Date.now() - hiddenAt > CONFIG.AUTO_LOCK_MINUTES * 60000) {
+    lockNow('已自動上鎖,請重新輸入 PIN');
+  }
+});
+
+init();
+</script>
+</body>
+</html>
