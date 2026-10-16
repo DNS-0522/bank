@@ -444,7 +444,6 @@ function viewLock() {
   return `<div class="screen">${head}
     <div class="lock-body">
       <p class="prompt">請輸入 4 位數 PIN</p>
-      ${CONFIG.ALLOW_MANUAL_TOKEN && state.token ? `<p class="msg soft" style="min-height:0">測試用:讀到的代碼 ${esc(state.token.slice(0, 4))}…${esc(state.token.slice(-4))}(${state.token.length} 字元)</p>` : ''}
       <div class="dots ${state.shake ? 'shake' : ''}" aria-label="已輸入 ${state.pin.length} 碼">${dots}</div>
       <p class="msg" id="msg">${esc(locked ? lockText(left) : state.error)}</p>
       <div class="pad">${['1','2','3','4','5','6','7','8','9'].map(num).join('')}<span></span>${num('0')}${back}</div>
