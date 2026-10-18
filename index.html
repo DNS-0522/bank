@@ -292,6 +292,7 @@ const CONFIG = {
   PARTNER: '他',                             // 通知文案裡怎麼稱呼你,例如「他」或你的暱稱
   SUBTITLE: '歡迎回來,這裡是專屬於妳的愛情銀行', // 首頁問候下方的小字
   AUTO_LOCK_MINUTES: 5,                      // 離開頁面超過這麼久,回來要重新輸入 PIN
+  HIDE_BALANCE_DEFAULT: true,                // true = 每次登入餘額都先顯示 ****,按眼睛圖示才顯示
   ALLOW_PIN_ONLY: true,                      // true = 打開網址、輸入 PIN 就能進去,不需要卡片。需先在資料庫執行 love-bank-pin-only.sql
   ALLOW_MANUAL_TOKEN: true                   // 測試用:沒有 NFC 卡片時,可在鎖定畫面手動貼上卡片代碼。送出禮物前改成 false
 };
@@ -306,6 +307,8 @@ const fmt = (n) => Number(n).toLocaleString('en-US');
 // 兩種餘額:heart(愛心,兌換商品,立刻扣款)與 wallet(零錢包,購買商品,由你確認後扣款)
 const money = (cur, n) => (cur === 'wallet' ? `${CONFIG.WALLET_PREFIX} ${fmt(n)}` : `${fmt(n)} ${CONFIG.UNIT}`);
 const bals = (d) => d.balances || { heart: d.balance || 0, wallet: 0 };
+const MASK = '****';
+const masked = () => state.hideBal;
 const availOf = (d, cur) => (cur === 'wallet' ? bals(d).wallet - (d.wallet_pending || 0) : bals(d).heart);
 const fmtDate = (iso) => {
   const d = new Date(iso);
@@ -370,7 +373,7 @@ async function rpc(fn, args) {
    ========================================================= */
 const state = {
   token: null, session: null, data: null,
-  tab: 'home', recTab: 'ledger', shopCur: 'heart', hideBal: false,
+  tab: 'home', recTab: 'ledger', shopCur: 'heart', hideBal: CONFIG.HIDE_BALANCE_DEFAULT,
   pin: '', busy: false, error: '', lockUntil: 0, shake: false,
   loading: false, loadError: false, sheet: null
 };
@@ -444,6 +447,7 @@ function viewLock() {
   return `<div class="screen">${head}
     <div class="lock-body">
       <p class="prompt">請輸入 4 位數 PIN</p>
+      ${CONFIG.ALLOW_MANUAL_TOKEN && state.token ? `<p class="msg soft" style="min-height:0">測試用:讀到的代碼 ${esc(state.token.slice(0, 4))}…${esc(state.token.slice(-4))}(${state.token.length} 字元)</p>` : ''}
       <div class="dots ${state.shake ? 'shake' : ''}" aria-label="已輸入 ${state.pin.length} 碼">${dots}</div>
       <p class="msg" id="msg">${esc(locked ? lockText(left) : state.error)}</p>
       <div class="pad">${['1','2','3','4','5','6','7','8','9'].map(num).join('')}<span></span>${num('0')}${back}</div>
@@ -474,14 +478,14 @@ function ledgerRow(r, showAfter) {
   const amt = cur === 'wallet' ? `${CONFIG.WALLET_PREFIX} ${fmt(Math.abs(r.amount))}` : `${fmt(Math.abs(r.amount))} ${CONFIG.UNIT}`;
   return `<div class="rrow">
     <div><p class="note">${esc(r.note || '入帳')}</p><p class="date">${fmtDate(r.created_at)}<span class="cur-tag">${esc(cur === 'wallet' ? CONFIG.WALLET_NAME : CONFIG.UNIT)}</span></p></div>
-    <p class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${amt}${showAfter ? `<span class="after">結餘 ${money(cur, r.after)}</span>` : ''}</p>
+    <p class="amt ${r.amount > 0 ? 'in' : 'out'}">${r.amount > 0 ? '+' : '−'}${amt}${showAfter ? `<span class="after">結餘 ${masked() ? MASK : money(cur, r.after)}</span>` : ''}</p>
   </div>`;
 }
 
 function tabHome(d) {
   const b = bals(d);
-  const wal = state.hideBal ? '••••' : fmt(b.wallet);
-  const hea = state.hideBal ? '••••' : fmt(b.heart);
+  const wal = state.hideBal ? MASK : fmt(b.wallet);
+  const hea = state.hideBal ? MASK : fmt(b.heart);
   const pick = (cur) => d.rewards.filter((r) => (r.currency || 'heart') === cur).slice(0, 5);
   const quick = (title, cur) => {
     const list = pick(cur);
@@ -527,8 +531,8 @@ function tabShop(d) {
   if (cur === 'wallet') {
     const pending = d.wallet_mode === 'pending';
     const hint = pending
-      ? `可用 ${money('wallet', avail)}。送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成。`
-      : `可用 ${money('wallet', avail)}。送出後會立刻從${esc(CONFIG.WALLET_NAME)}扣款,並通知${esc(CONFIG.PARTNER)}。`;
+      ? `可用 ${masked() ? MASK : money('wallet', avail)}。送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成。`
+      : `可用 ${masked() ? MASK : money('wallet', avail)}。送出後會立刻從${esc(CONFIG.WALLET_NAME)}扣款,並通知${esc(CONFIG.PARTNER)}。`;
     const recent = d.redemptions.filter((r) => r.currency === 'wallet').slice(0, 5);
     return `${topbar('商店')}${seg}<p class="hint">${hint}</p>
       <section class="spend">
@@ -552,11 +556,11 @@ function tabShop(d) {
         return `<div class="item">
           <span class="q-circle sm"><span class="q-emoji">${esc(r.emoji || '🎁')}</span></span>
           <div><h3>${esc(r.title)}</h3>${r.description ? `<p class="desc">${esc(r.description)}</p>` : ''}<p class="cost">${money('heart', r.cost)}</p></div>
-          <button class="pill" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? `還差 ${fmt(r.cost - avail)}` : '兌換'}</button>
+          <button class="pill" data-action="ask-redeem" data-id="${esc(r.id)}" ${short ? 'disabled' : ''}>${short ? (masked() ? '餘額不足' : `還差 ${fmt(r.cost - avail)}`) : '兌換'}</button>
         </div>`;
       }).join('')
     : `<p class="empty">這個商店暫時沒有商品。</p>`;
-  return `${topbar('商店')}${seg}<p class="hint">愛心可用 ${money('heart', avail)}。兌換後會立刻扣款。</p><div class="list">${items}</div>`;
+  return `${topbar('商店')}${seg}<p class="hint">愛心可用 ${masked() ? MASK : money('heart', avail)}。兌換後會立刻扣款。</p><div class="list">${items}</div>`;
 }
 
 function tabRecords(d) {
@@ -614,7 +618,7 @@ function renderSheet() {
     const after = availOf(state.data, 'heart') - s.reward.cost;
     root.innerHTML = `${open}
       <h2 id="sh-t">兌換「${esc(s.reward.title)}」?</h2>
-      <p>會花掉 ${fmt(s.reward.cost)} ${esc(CONFIG.UNIT)},剩下 ${fmt(after)} ${esc(CONFIG.UNIT)}。兌換後${esc(CONFIG.PARTNER)}會馬上收到通知。</p>
+      <p>會花掉 ${fmt(s.reward.cost)} ${esc(CONFIG.UNIT)}${masked() ? '' : `,剩下 ${fmt(after)} ${esc(CONFIG.UNIT)}`}。兌換後${esc(CONFIG.PARTNER)}會馬上收到通知。</p>
       <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-redeem" ${dis}>${state.busy ? '處理中…' : '確定兌換'}</button></div>
     </div></div>`;
   } else if (s.type === 'spend') {
@@ -623,15 +627,15 @@ function renderSheet() {
     root.innerHTML = `${open}
       <h2 id="sh-t">${pending ? '送出' : '確認'}支出 ${money('wallet', s.amount)}?</h2>
       <p>項目:${esc(s.item || '零錢包支出')}。${pending
-        ? `送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成。送出後可用額度剩 ${money('wallet', after)}。`
-        : `會立刻從${esc(CONFIG.WALLET_NAME)}扣款,扣完剩 ${money('wallet', after)},並通知${esc(CONFIG.PARTNER)}。`}</p>
+        ? `送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成。${masked() ? '' : `送出後可用額度剩 ${money('wallet', after)}。`}`
+        : `會立刻從${esc(CONFIG.WALLET_NAME)}扣款${masked() ? '' : `,扣完剩 ${money('wallet', after)}`},並通知${esc(CONFIG.PARTNER)}。`}</p>
       <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-spend" ${dis}>${state.busy ? '處理中…' : (pending ? '送出' : '確認支出')}</button></div>
     </div></div>`;
   } else if (s.type === 'purchase') {
     const after = availOf(state.data, 'wallet') - s.reward.cost;
     root.innerHTML = `${open}
       <h2 id="sh-t">購買「${esc(s.reward.title)}」?</h2>
-      <p>價格 ${money('wallet', s.reward.cost)}。送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成,這時零錢包還不會變少。送出後可用額度剩 ${money('wallet', after)}。</p>
+      <p>價格 ${money('wallet', s.reward.cost)}。送出後會先通知${esc(CONFIG.PARTNER)},等${esc(CONFIG.PARTNER)}確認並扣款才算完成,這時零錢包還不會變少。${masked() ? '' : `送出後可用額度剩 ${money('wallet', after)}。`}</p>
       <div class="actions"><button class="btn ghost" data-action="close-sheet" ${dis}>取消</button><button class="btn" data-action="confirm-purchase" ${dis}>${state.busy ? '送出中…' : '送出購買'}</button></div>
     </div></div>`;
   } else if (s.type === 'refund') {
@@ -692,7 +696,7 @@ function updateTimers() {
 
 function lockNow(message) {
   state.session = null; state.data = null; state.pin = ''; state.sheet = null;
-  state.tab = 'home'; state.recTab = 'ledger';
+  state.tab = 'home'; state.recTab = 'ledger'; state.hideBal = CONFIG.HIDE_BALANCE_DEFAULT;
   state.error = message || '';
   store.del('lb_session');
   renderSheet();
@@ -766,7 +770,7 @@ async function doRedeem() {
   try {
     const r = await rpc('redeem', { p_session: state.session, p_reward_id: reward.id });
     state.busy = false; state.sheet = null; renderSheet();
-    if (r.ok) showSeal('已兌換', reward.title, `剩餘 ${fmt(r.balance)} ${CONFIG.UNIT}`); else toast(ERR_TEXT[r.error] || '兌換失敗,請再試一次');
+    if (r.ok) showSeal('已兌換', reward.title, masked() ? '' : `剩餘 ${fmt(r.balance)} ${CONFIG.UNIT}`); else toast(ERR_TEXT[r.error] || '兌換失敗,請再試一次');
     await loadDashboard(true);
   } catch (e) {
     state.busy = false; state.sheet = null; renderSheet();
@@ -782,7 +786,7 @@ async function doSpend() {
     const r = await rpc('spend', { p_session: state.session, p_amount: amount, p_item: item || null });
     state.busy = false; state.sheet = null; renderSheet();
     if (r.ok && r.pending) showSeal('已送出', item || '零錢包支出', `等待${CONFIG.PARTNER}確認並扣款`);
-    else if (r.ok) showSeal('已扣款', item || '零錢包支出', `剩餘 ${money('wallet', r.balance)}`);
+    else if (r.ok) showSeal('已扣款', item || '零錢包支出', masked() ? '' : `剩餘 ${money('wallet', r.balance)}`);
     else toast(ERR_TEXT[r.error] || '送出失敗,請再試一次');
     await loadDashboard(true);
   } catch (e) {
@@ -847,7 +851,7 @@ document.addEventListener('click', (e) => {
       if (!reward) break;
       const cur = reward.currency || 'heart';
       const avail = availOf(state.data, cur);
-      if (avail < reward.cost) { toast(`還差 ${money(cur, reward.cost - avail)}`); break; }
+      if (avail < reward.cost) { toast(masked() ? '餘額不足' : `還差 ${money(cur, reward.cost - avail)}`); break; }
       state.sheet = { type: cur === 'wallet' ? 'purchase' : 'redeem', reward }; renderSheet();
       break;
     }
@@ -863,7 +867,7 @@ document.addEventListener('click', (e) => {
       const item = (document.getElementById('spend-item')?.value || '').trim();
       if (!amount || amount <= 0) { toast(ERR_TEXT.invalid_amount); break; }
       const avail = availOf(state.data, 'wallet');
-      if (amount > avail) { toast(`超過可用額度,還差 ${money('wallet', amount - avail)}`); break; }
+      if (amount > avail) { toast(masked() ? '超過可用額度' : `超過可用額度,還差 ${money('wallet', amount - avail)}`); break; }
       state.sheet = { type: 'spend', amount, item }; renderSheet();
       break;
     }
